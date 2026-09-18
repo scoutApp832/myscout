@@ -1,0 +1,344 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const AttendanceCheckIn = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
+  
+  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(true);
+  const [event, setEvent] = useState(null);
+  const [email, setEmail] = useState('');
+  const [sin, setSin] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [checkingIn, setCheckingIn] = useState(false);
+
+  // ============================================
+  // VERIFY LINK ON LOAD
+  // ============================================
+  useEffect(() => {
+    verifyLink();
+  }, [token]);
+
+  const verifyLink = async () => {
+    try {
+      setVerifying(true);
+      const response = await axios.get(`${API_URL}/national/attendance/verify/${token}`);
+      
+      if (response.data.valid) {
+        setEvent(response.data.event);
+        setError('');
+      } else {
+        setError('Invalid or expired attendance link');
+        setEvent(null);
+      }
+    } catch (err) {
+      console.error('Verify link error:', err);
+      setError('Failed to verify attendance link. Please check the link and try again.');
+      setEvent(null);
+    } finally {
+      setVerifying(false);
+      setLoading(false);
+    }
+  };
+
+  // ============================================
+  // HANDLE CHECK-IN
+  // ============================================
+  const handleCheckIn = async (e) => {
+    e.preventDefault();
+    
+    // Validate input
+    if (!email && !sin) {
+      setError('Please enter either your email or SIN');
+      return;
+    }
+
+    setCheckingIn(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.post(`${API_URL}/national/attendance/check-in/${token}`, {
+        email: email || undefined,
+        sin: sin || undefined
+      });
+
+      setSuccess(response.data.message);
+      setCheckedIn(true);
+      
+      // Get member info if available
+      if (response.data.member) {
+        setFullName(response.data.member.fullName || '');
+      }
+      
+      // Auto redirect after 5 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 5000);
+      
+    } catch (err) {
+      console.error('Check-in error:', err);
+      setError(err.response?.data?.message || 'Failed to check in. Please try again.');
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  // ============================================
+  // FORMAT DATE
+  // ============================================
+  const formatDate = (date) => {
+    if (!date) return 'TBD';
+    return new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // ============================================
+  // LOADING STATE
+  // ============================================
+  if (verifying) {
+    return (
+      <div className="checkin-container">
+        <div className="checkin-card loading-card">
+          <div className="checkin-loading">
+            <div className="spinner-large"></div>
+            <h3>Verifying attendance link...</h3>
+            <p>Please wait while we confirm your access</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // ERROR STATE - Invalid Link
+  // ============================================
+  if (error && !event) {
+    return (
+      <div className="checkin-container">
+        <div className="checkin-card error-card">
+          <div className="checkin-error-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          <h2>Invalid Attendance Link</h2>
+          <p className="error-message">{error}</p>
+          <div className="error-details">
+            <p>This could be because:</p>
+            <ul>
+              <li>The link has expired (valid for 24 hours)</li>
+              <li>The link was already used</li>
+              <li>The link is incorrect</li>
+            </ul>
+          </div>
+          <button 
+            className="btn-primary btn-block"
+            onClick={() => navigate('/')}
+          >
+            <i className="fas fa-home"></i> Go Home
+          </button>
+          <button 
+            className="btn-secondary btn-block"
+            onClick={verifyLink}
+          >
+            <i className="fas fa-redo"></i> Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // SUCCESS STATE - Checked In
+  // ============================================
+  if (checkedIn) {
+    return (
+      <div className="checkin-container">
+        <div className="checkin-card success-card">
+          <div className="checkin-success-icon">
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <h2>✅ Check-in Successful!</h2>
+          <div className="success-message">
+            <p>{success || 'You have been successfully checked in!'}</p>
+          </div>
+          
+          {fullName && (
+            <div className="checkin-user-info">
+              <p><strong>Welcome, {fullName}!</strong></p>
+            </div>
+          )}
+          
+          <div className="checkin-event-info">
+            <h4>Event Details</h4>
+            <p><strong>{event?.title}</strong></p>
+            <p><i className="fas fa-calendar"></i> {formatDate(event?.start_date)}</p>
+            {event?.location && (
+              <p><i className="fas fa-map-marker-alt"></i> {event?.location}</p>
+            )}
+            <p className="checkin-time">
+              <i className="fas fa-clock"></i> 
+              Checked in at: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+
+          <div className="checkin-redirect">
+            <p>Redirecting to your dashboard in 5 seconds...</p>
+            <div className="progress-bar">
+              <div className="progress-fill"></div>
+            </div>
+          </div>
+          
+          <button 
+            className="btn-primary btn-block"
+            onClick={() => navigate('/dashboard')}
+          >
+            <i className="fas fa-arrow-right"></i> Go to Dashboard Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // CHECK-IN FORM
+  // ============================================
+  return (
+    <div className="checkin-container">
+      <div className="checkin-card">
+        {/* Header */}
+        <div className="checkin-header">
+          <div className="checkin-logo">
+            <span className="logo-icon">⛺</span>
+            <span className="logo-text">Scout Attendance</span>
+          </div>
+          <h2>Event Check-in</h2>
+          <p className="checkin-subtitle">Please verify your identity to check in</p>
+        </div>
+
+        {/* Event Info */}
+        <div className="checkin-event-info">
+          <div className="event-badge">
+            <span className="badge-status">🔴 LIVE</span>
+          </div>
+          <h3>{event?.title || 'Event'}</h3>
+          <div className="event-details">
+            <p>
+              <i className="fas fa-calendar-alt"></i>
+              <span>{formatDate(event?.start_date)}</span>
+            </p>
+            {event?.start_date && (
+              <p>
+                <i className="fas fa-clock"></i>
+                <span>{formatTime(event?.start_date)}</span>
+              </p>
+            )}
+            {event?.location && (
+              <p>
+                <i className="fas fa-map-marker-alt"></i>
+                <span>{event?.location}</span>
+              </p>
+            )}
+            {event?.venue && event?.venue !== event?.location && (
+              <p>
+                <i className="fas fa-building"></i>
+                <span>{event?.venue}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Check-in Form */}
+        <form onSubmit={handleCheckIn} className="checkin-form">
+          <div className="form-instructions">
+            <p>Enter <strong>either</strong> your registered email <strong>OR</strong> your Scout SIN</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">
+              <i className="fas fa-envelope"></i> Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your registered email"
+              className="checkin-input"
+              disabled={checkingIn}
+            />
+          </div>
+
+          <div className="form-divider">
+            <span>OR</span>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="sin">
+              <i className="fas fa-id-card"></i> SIN (Scout Identification Number)
+            </label>
+            <input
+              id="sin"
+              type="text"
+              value={sin}
+              onChange={(e) => setSin(e.target.value.toUpperCase())}
+              placeholder="e.g., MSR-2024-0001"
+              className="checkin-input"
+              disabled={checkingIn}
+            />
+          </div>
+
+          {error && (
+            <div className="checkin-error">
+              <i className="fas fa-exclamation-circle"></i>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="btn-checkin"
+            disabled={checkingIn || (!email && !sin)}
+          >
+            {checkingIn ? (
+              <>
+                <span className="spinner-small"></span>
+                Checking in...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-check"></i>
+                Check In Now
+              </>
+            )}
+          </button>
+
+          <p className="checkin-help">
+            <i className="fas fa-info-circle"></i>
+            Having trouble? Contact your event organizer for assistance.
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AttendanceCheckIn;
