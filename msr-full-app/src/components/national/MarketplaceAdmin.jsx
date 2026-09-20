@@ -124,9 +124,9 @@ const MarketplaceAdmin = () => {
         response.data ||
         [];
 
-      setProducts(Array.isArray(data) ? data : []);
-
       const list = Array.isArray(data) ? data : [];
+
+      setProducts(list);
 
       setStats((previous) => ({
         ...previous,
@@ -152,7 +152,9 @@ const MarketplaceAdmin = () => {
 
   const loadCategories = async () => {
     try {
-      const response = await api.get('/public/marketplace/categories');
+      const response = await api.get(
+        '/public/marketplace/categories'
+      );
 
       const data =
         response.data?.categories ||
@@ -238,7 +240,11 @@ const MarketplaceAdmin = () => {
         String(product.category || '')
           .toLowerCase()
           .includes(term) ||
-        String(product.seller_name || product.sellerName || '')
+        String(
+          product.seller_name ||
+            product.sellerName ||
+            ''
+        )
           .toLowerCase()
           .includes(term);
 
@@ -279,7 +285,10 @@ const MarketplaceAdmin = () => {
         product.category_name ||
         product.categoryName ||
         '',
-      stock: product.stock ?? product.quantity ?? '',
+      stock:
+        product.stock ??
+        product.quantity ??
+        '',
       seller_name:
         product.seller_name ||
         product.sellerName ||
@@ -306,7 +315,9 @@ const MarketplaceAdmin = () => {
       product.product_image ||
       '';
 
-    setProductImagePreview(getMediaUrl(existingImage));
+    setProductImagePreview(
+      getMediaUrl(existingImage)
+    );
 
     setError('');
     setSuccess('');
@@ -351,7 +362,10 @@ const MarketplaceAdmin = () => {
       return;
     }
 
-    if (!productForm.price && productForm.price !== 0) {
+    if (
+      !productForm.price &&
+      productForm.price !== 0
+    ) {
       setError('Product price is required.');
       return;
     }
@@ -390,9 +404,13 @@ const MarketplaceAdmin = () => {
           response.data?.data ||
           response.data;
 
-        productId = updated?.id || editingProduct.id;
+        productId =
+          updated?.id ||
+          editingProduct.id;
 
-        setSuccess('Product updated successfully.');
+        setSuccess(
+          'Product updated successfully.'
+        );
       } else {
         const response = await api.post(
           '/admin/products',
@@ -406,20 +424,26 @@ const MarketplaceAdmin = () => {
 
         productId = created?.id;
 
-        setSuccess('Product created successfully.');
+        setSuccess(
+          'Product created successfully.'
+        );
       }
 
       if (productImage && productId) {
         const formData = new FormData();
 
-        formData.append('image', productImage);
+        formData.append(
+          'image',
+          productImage
+        );
 
         await api.post(
           `/admin/products/${productId}/image`,
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data',
+              'Content-Type':
+                'multipart/form-data',
             },
           }
         );
@@ -431,7 +455,10 @@ const MarketplaceAdmin = () => {
         closeProductPanel();
       }, 500);
     } catch (err) {
-      console.error('Save product error:', err);
+      console.error(
+        'Save product error:',
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -455,7 +482,9 @@ const MarketplaceAdmin = () => {
     setSuccess('');
 
     try {
-      await api.delete(`/admin/products/${product.id}`);
+      await api.delete(
+        `/admin/products/${product.id}`
+      );
 
       setProducts((previous) =>
         previous.filter(
@@ -463,9 +492,14 @@ const MarketplaceAdmin = () => {
         )
       );
 
-      setSuccess('Product deleted successfully.');
+      setSuccess(
+        'Product deleted successfully.'
+      );
     } catch (err) {
-      console.error('Delete product error:', err);
+      console.error(
+        'Delete product error:',
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -478,7 +512,9 @@ const MarketplaceAdmin = () => {
     if (!message?.id) return;
 
     try {
-      await api.put(`/admin/messages/${message.id}/read`);
+      await api.put(
+        `/admin/messages/${message.id}/read`
+      );
 
       setMessages((previous) =>
         previous.map((item) =>
@@ -501,7 +537,10 @@ const MarketplaceAdmin = () => {
         ),
       }));
     } catch (err) {
-      console.error('Mark message read error:', err);
+      console.error(
+        'Mark message read error:',
+        err
+      );
     }
   };
 
@@ -525,7 +564,10 @@ const MarketplaceAdmin = () => {
         )
       );
     } catch (err) {
-      console.error('Mark message replied error:', err);
+      console.error(
+        'Mark message replied error:',
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -548,7 +590,9 @@ const MarketplaceAdmin = () => {
     setSuccess('');
 
     try {
-      await api.delete(`/admin/messages/${message.id}`);
+      await api.delete(
+        `/admin/messages/${message.id}`
+      );
 
       setMessages((previous) =>
         previous.filter(
@@ -575,9 +619,14 @@ const MarketplaceAdmin = () => {
             : previous.unreadMessages,
       }));
 
-      setSuccess('Message deleted successfully.');
+      setSuccess(
+        'Message deleted successfully.'
+      );
     } catch (err) {
-      console.error('Delete message error:', err);
+      console.error(
+        'Delete message error:',
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -631,12 +680,6 @@ const MarketplaceAdmin = () => {
           background: ${SCOUT.background};
           color: ${SCOUT.text};
         }
-
-        /*
-         * IMPORTANT:
-         * The common dashboard Sidebar is outside this component.
-         * This component therefore never changes its position.
-         */
 
         .msr-marketplace-inner {
           width: 100%;
@@ -952,26 +995,17 @@ const MarketplaceAdmin = () => {
         }
 
         /*
-         * PRODUCT PANEL
-         *
-         * The panel is positioned relative to the Marketplace content,
-         * NOT over the common dashboard sidebar.
+         * Product panel starts after the common dashboard sidebar.
+         * The common Sidebar.jsx remains visible.
          */
         .msr-product-overlay {
           position: fixed;
           top: 0;
           right: 0;
           bottom: 0;
-
-          /*
-           * Leave the common dashboard sidebar visible.
-           * The sidebar normally occupies about 250px.
-           */
           left: 250px;
-
           background: rgba(0,0,0,.32);
           z-index: 900;
-
           display: flex;
           justify-content: flex-start;
           align-items: stretch;
@@ -1309,6 +1343,7 @@ const MarketplaceAdmin = () => {
               <div className="msr-stat-label">
                 Total Products
               </div>
+
               <div className="msr-stat-value">
                 {stats.products}
               </div>
@@ -1318,6 +1353,7 @@ const MarketplaceAdmin = () => {
               <div className="msr-stat-label">
                 Active Products
               </div>
+
               <div className="msr-stat-value">
                 {stats.activeProducts}
               </div>
@@ -1327,6 +1363,7 @@ const MarketplaceAdmin = () => {
               <div className="msr-stat-label">
                 Messages
               </div>
+
               <div className="msr-stat-value">
                 {stats.messages}
               </div>
@@ -1336,6 +1373,7 @@ const MarketplaceAdmin = () => {
               <div className="msr-stat-label">
                 Unread Messages
               </div>
+
               <div className="msr-stat-value">
                 {stats.unreadMessages}
               </div>
@@ -1371,6 +1409,7 @@ const MarketplaceAdmin = () => {
                 }
               >
                 Messages
+
                 {stats.unreadMessages > 0 && (
                   <span
                     style={{
@@ -1398,7 +1437,9 @@ const MarketplaceAdmin = () => {
                       placeholder="Search products..."
                       value={search}
                       onChange={(event) =>
-                        setSearch(event.target.value)
+                        setSearch(
+                          event.target.value
+                        )
                       }
                     />
 
@@ -1415,29 +1456,41 @@ const MarketplaceAdmin = () => {
                         All Categories
                       </option>
 
-                      {categories.map((category, index) => {
-                        const value =
-                          typeof category === 'string'
-                            ? category
-                            : category.name ||
-                              category.category ||
-                              category.title ||
-                              '';
+                      {categories.map(
+                        (category, index) => {
+                          const value =
+                            typeof category ===
+                            'string'
+                              ? category
+                              : category.name ||
+                                category.category ||
+                                category.title ||
+                                '';
 
-                        return (
-                          <option
-                            key={
-                              category.id ||
-                              `${value}-${index}`
-                            }
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        );
-                      })}
+                          return (
+                            <option
+                              key={
+                                category.id ||
+                                `${value}-${index}`
+                              }
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          );
+                        }
+                      )}
                     </select>
                   </div>
+
+                  {/* RESTORED EXISTING BUTTON */}
+                  <button
+                    type="button"
+                    className="msr-button msr-button-purple"
+                    onClick={openAddProduct}
+                  >
+                    ＋ Add Product
+                  </button>
                 </div>
 
                 {loadingProducts ? (
@@ -1465,8 +1518,8 @@ const MarketplaceAdmin = () => {
                         fontSize: 13,
                       }}
                     >
-                      Use the New Product button in the
-                      dashboard sidebar to add a product.
+                      Use the Add Product button to
+                      create a marketplace product.
                     </div>
                   </div>
                 ) : (
@@ -1487,11 +1540,14 @@ const MarketplaceAdmin = () => {
                         {filteredProducts.map(
                           (product) => {
                             const image =
-                              getProductImage(product);
+                              getProductImage(
+                                product
+                              );
 
                             const status =
                               product.status ||
-                              (product.is_active === false
+                              (product.is_active ===
+                              false
                                 ? 'inactive'
                                 : 'active');
 
@@ -1556,7 +1612,8 @@ const MarketplaceAdmin = () => {
                                     className={`msr-badge ${
                                       status ===
                                         'active' ||
-                                      status === 'published'
+                                      status ===
+                                        'published'
                                         ? 'msr-badge-active'
                                         : 'msr-badge-inactive'
                                     }`}
@@ -1672,9 +1729,13 @@ const MarketplaceAdmin = () => {
                             className="msr-icon-button msr-icon-delete"
                             title="Delete message"
                             onClick={() =>
-                              deleteMessage(message)
+                              deleteMessage(
+                                message
+                              )
                             }
-                            disabled={deletingMessage}
+                            disabled={
+                              deletingMessage
+                            }
                           >
                             🗑️
                           </button>
@@ -1688,21 +1749,14 @@ const MarketplaceAdmin = () => {
           </div>
         </div>
 
-        {/* =====================================================
-            ADD / EDIT PRODUCT PANEL
-            =====================================================
-
-            IMPORTANT:
-            This panel starts AFTER the common dashboard sidebar
-            on desktop. Therefore the common Sidebar.jsx remains
-            visible and does not move to the top.
-        */}
+        {/* ADD / EDIT PRODUCT PANEL */}
         {showProductModal && (
           <div
             className="msr-product-overlay"
             onMouseDown={(event) => {
               if (
-                event.target === event.currentTarget &&
+                event.target ===
+                  event.currentTarget &&
                 !savingProduct
               ) {
                 closeProductPanel();
@@ -1710,6 +1764,7 @@ const MarketplaceAdmin = () => {
             }}
           >
             <div className="msr-product-panel">
+
               <div className="msr-product-panel-header">
                 <div>
                   <h2 className="msr-panel-title">
@@ -1759,7 +1814,9 @@ const MarketplaceAdmin = () => {
                         name="name"
                         className="msr-input"
                         value={productForm.name}
-                        onChange={handleProductChange}
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="Enter product name"
                         required
                       />
@@ -1773,8 +1830,12 @@ const MarketplaceAdmin = () => {
                       <textarea
                         name="description"
                         className="msr-textarea"
-                        value={productForm.description}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.description
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="Describe the product..."
                       />
                     </div>
@@ -1792,7 +1853,9 @@ const MarketplaceAdmin = () => {
                         name="price"
                         className="msr-input"
                         value={productForm.price}
-                        onChange={handleProductChange}
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="0"
                         min="0"
                         required
@@ -1809,7 +1872,9 @@ const MarketplaceAdmin = () => {
                         name="stock"
                         className="msr-input"
                         value={productForm.stock}
-                        onChange={handleProductChange}
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="0"
                         min="0"
                       />
@@ -1824,8 +1889,12 @@ const MarketplaceAdmin = () => {
                         type="text"
                         name="category"
                         className="msr-input"
-                        value={productForm.category}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.category
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="e.g. Uniforms"
                         list="marketplace-categories"
                       />
@@ -1834,7 +1903,8 @@ const MarketplaceAdmin = () => {
                         {categories.map(
                           (category, index) => {
                             const value =
-                              typeof category === 'string'
+                              typeof category ===
+                              'string'
                                 ? category
                                 : category.name ||
                                   category.category ||
@@ -1860,8 +1930,12 @@ const MarketplaceAdmin = () => {
                       <select
                         name="status"
                         className="msr-select"
-                        value={productForm.status}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.status
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                       >
                         <option value="active">
                           Active
@@ -1882,8 +1956,12 @@ const MarketplaceAdmin = () => {
                         type="text"
                         name="seller_name"
                         className="msr-input"
-                        value={productForm.seller_name}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.seller_name
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="Seller name"
                       />
                     </div>
@@ -1897,8 +1975,12 @@ const MarketplaceAdmin = () => {
                         type="text"
                         name="seller_phone"
                         className="msr-input"
-                        value={productForm.seller_phone}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.seller_phone
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="Phone number"
                       />
                     </div>
@@ -1912,8 +1994,12 @@ const MarketplaceAdmin = () => {
                         type="email"
                         name="seller_email"
                         className="msr-input"
-                        value={productForm.seller_email}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.seller_email
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="seller@example.com"
                       />
                     </div>
@@ -1927,8 +2013,12 @@ const MarketplaceAdmin = () => {
                         type="text"
                         name="location"
                         className="msr-input"
-                        value={productForm.location}
-                        onChange={handleProductChange}
+                        value={
+                          productForm.location
+                        }
+                        onChange={
+                          handleProductChange
+                        }
                         placeholder="Location"
                       />
                     </div>
@@ -1941,7 +2031,9 @@ const MarketplaceAdmin = () => {
                       <div className="msr-image-upload">
                         {productImagePreview && (
                           <img
-                            src={productImagePreview}
+                            src={
+                              productImagePreview
+                            }
                             alt="Product preview"
                             className="msr-image-preview"
                           />
@@ -1951,7 +2043,9 @@ const MarketplaceAdmin = () => {
                           type="file"
                           className="msr-file-input"
                           accept="image/*"
-                          onChange={handleImageChange}
+                          onChange={
+                            handleImageChange
+                          }
                         />
 
                         <div
@@ -1973,7 +2067,9 @@ const MarketplaceAdmin = () => {
                   <button
                     type="button"
                     className="msr-button msr-button-secondary"
-                    onClick={closeProductPanel}
+                    onClick={
+                      closeProductPanel
+                    }
                     disabled={savingProduct}
                   >
                     Cancel
@@ -1996,21 +2092,21 @@ const MarketplaceAdmin = () => {
           </div>
         )}
 
-        {/* =====================================================
-            MESSAGE VIEW MODAL
-            ===================================================== */}
+        {/* MESSAGE VIEW MODAL */}
         {selectedMessage && (
           <div
             className="msr-message-modal-overlay"
             onMouseDown={(event) => {
               if (
-                event.target === event.currentTarget
+                event.target ===
+                event.currentTarget
               ) {
                 setSelectedMessage(null);
               }
             }}
           >
             <div className="msr-message-modal">
+
               <div className="msr-message-modal-header">
                 <h2
                   style={{
@@ -2034,6 +2130,7 @@ const MarketplaceAdmin = () => {
               </div>
 
               <div className="msr-message-modal-body">
+
                 <div className="msr-message-field">
                   <div className="msr-message-field-label">
                     Name
@@ -2097,7 +2194,8 @@ const MarketplaceAdmin = () => {
                 <div
                   style={{
                     display: 'flex',
-                    justifyContent: 'flex-end',
+                    justifyContent:
+                      'flex-end',
                     gap: 9,
                     marginTop: 20,
                   }}
@@ -2136,6 +2234,7 @@ const MarketplaceAdmin = () => {
                     Delete
                   </button>
                 </div>
+
               </div>
             </div>
           </div>
