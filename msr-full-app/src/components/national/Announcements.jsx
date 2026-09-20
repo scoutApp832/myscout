@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL =
+  process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Announcements = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
-  // ✅ Modal state
+  // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // Edit state
+  const [editingId, setEditingId] = useState(null);
+  const [editing, setEditing] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -27,12 +32,13 @@ const Announcements = () => {
     schedule_date: ''
   });
 
-  // ✅ Check if user can manage announcements
-  const canManageAnnouncements = user?.role === 'super_admin' || 
-                                 user?.role === 'super-admin' || 
-                                 user?.role === 'admin' ||
-                                 user?.role === 'national_commissioner' ||
-                                 user?.role === 'national-commissioner';
+  // Check if user can manage announcements
+  const canManageAnnouncements =
+    user?.role === 'super_admin' ||
+    user?.role === 'super-admin' ||
+    user?.role === 'admin' ||
+    user?.role === 'national_commissioner' ||
+    user?.role === 'national-commissioner';
 
   const announcementTypes = [
     { value: 'general', label: 'General' },
@@ -43,35 +49,77 @@ const Announcements = () => {
 
   const districts = [
     'all',
-    'Gasabo', 'Kicukiro', 'Nyarugenge',
-    'Musanze', 'Rubavu', 'Rulindo', 'Gakenke', 'Burera',
-    'Huye', 'Nyanza', 'Muhanga', 'Ruhango', 'Gisagara',
-    'Nyagatare', 'Gatsibo', 'Kayonza', 'Rwamagana', 'Ngoma',
-    'Rusizi', 'Nyamasheke', 'Karongi', 'Ngororero'
+    'Gasabo',
+    'Kicukiro',
+    'Nyarugenge',
+    'Musanze',
+    'Rubavu',
+    'Rulindo',
+    'Gakenke',
+    'Burera',
+    'Huye',
+    'Nyanza',
+    'Muhanga',
+    'Ruhango',
+    'Gisagara',
+    'Nyagatare',
+    'Gatsibo',
+    'Kayonza',
+    'Rwamagana',
+    'Ngoma',
+    'Rusizi',
+    'Nyamasheke',
+    'Karongi',
+    'Ngororero'
   ];
 
-  // ✅ Audience options with checkbox
+  // Audience options
   const audienceOptions = [
-    { value: 'public', label: '🌐 Public Site (Landing Page)' },
-    { value: 'scouts', label: '🎯 Scouts' },
-    { value: 'unit_leaders', label: '📋 Unit Leaders' },
-    { value: 'district_commissioners', label: '🏛️ District Commissioners' },
-    { value: 'national_commissioners', label: '👑 National Commissioners' },
-    { value: 'donors', label: '🤝 Donors' },
-    { value: 'all', label: '📢 Everyone (All Users)' }
+    {
+      value: 'public',
+      label: '🌐 Public Site (Landing Page)'
+    },
+    {
+      value: 'scouts',
+      label: '🎯 Scouts'
+    },
+    {
+      value: 'unit_leaders',
+      label: '📋 Unit Leaders'
+    },
+    {
+      value: 'district_commissioners',
+      label: '🏛️ District Commissioners'
+    },
+    {
+      value: 'national_commissioners',
+      label: '👑 National Commissioners'
+    },
+    {
+      value: 'donors',
+      label: '🤝 Donors'
+    },
+    {
+      value: 'all',
+      label: '📢 Everyone (All Users)'
+    }
   ];
 
   useEffect(() => {
     fetchAnnouncements();
   }, [user?.role]);
 
+  // ============================================================
+  // FETCH ANNOUNCEMENTS
+  // ============================================================
+
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         setError('Please login to view announcements');
         setLoading(false);
@@ -79,32 +127,53 @@ const Announcements = () => {
       }
 
       let apiUrl;
-      if (user?.role === 'national_commissioner' || 
-          user?.role === 'national-commissioner' ||
-          user?.role === 'super_admin' || 
-          user?.role === 'super-admin' || 
-          user?.role === 'admin') {
+
+      if (
+        user?.role === 'national_commissioner' ||
+        user?.role === 'national-commissioner' ||
+        user?.role === 'super_admin' ||
+        user?.role === 'super-admin' ||
+        user?.role === 'admin'
+      ) {
         apiUrl = `${API_URL}/national/announcements`;
-      } else if (user?.role === 'district_commissioner' || user?.role === 'district_commissioner') {
+      } else if (
+        user?.role === 'district_commissioner' ||
+        user?.role === 'district-commissioner'
+      ) {
         apiUrl = `${API_URL}/district/announcements`;
-      } else if (user?.role === 'unit_leader' || user?.role === 'scout') {
+      } else if (
+        user?.role === 'unit_leader' ||
+        user?.role === 'scout'
+      ) {
         apiUrl = `${API_URL}/scout/announcements`;
       } else {
         apiUrl = `${API_URL}/announcements`;
       }
-      
-      console.log(`📢 Fetching announcements from: ${apiUrl}`);
-      console.log(`👤 User role: ${user?.role}`);
+
+      console.log(
+        `📢 Fetching announcements from: ${apiUrl}`
+      );
+
+      console.log(
+        `👤 User role: ${user?.role}`
+      );
 
       const response = await axios.get(apiUrl, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
-      console.log('📊 Announcements response:', response.data);
+      console.log(
+        '📊 Announcements response:',
+        response.data
+      );
 
       let announcementsData = [];
+
       if (response.data?.success) {
-        announcementsData = response.data.announcements || [];
+        announcementsData =
+          response.data.announcements || [];
       } else if (Array.isArray(response.data)) {
         announcementsData = response.data;
       } else if (response.data?.data) {
@@ -113,36 +182,60 @@ const Announcements = () => {
         announcementsData = response.data.announcements;
       }
 
-      setAnnouncements(Array.isArray(announcementsData) ? announcementsData : []);
-      
+      setAnnouncements(
+        Array.isArray(announcementsData)
+          ? announcementsData
+          : []
+      );
     } catch (err) {
-      console.error('❌ Fetch announcements error:', err);
-      
+      console.error(
+        '❌ Fetch announcements error:',
+        err
+      );
+
       if (err.response?.status === 403) {
-        setError('You do not have permission to view announcements');
+        setError(
+          'You do not have permission to view announcements'
+        );
       } else if (err.response?.status === 401) {
         setError('Please login to view announcements');
       } else if (err.response?.status === 500) {
-        setError('Server error. Please try again later.');
+        setError(
+          'Server error. Please try again later.'
+        );
       } else {
-        setError(err.response?.data?.message || 'Failed to load announcements');
+        setError(
+          err.response?.data?.message ||
+            'Failed to load announcements'
+        );
       }
-      
+
       setAnnouncements([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Delete announcement function
+  // ============================================================
+  // DELETE ANNOUNCEMENT
+  // ============================================================
+
   const handleDelete = async (id) => {
     if (!canManageAnnouncements) {
-      setError('❌ You do not have permission to delete announcements');
+      setError(
+        '❌ You do not have permission to delete announcements'
+      );
+
       setTimeout(() => setError(''), 3000);
+
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete this announcement? This action cannot be undone!')) {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this announcement? This action cannot be undone!'
+      )
+    ) {
       return;
     }
 
@@ -152,75 +245,115 @@ const Announcements = () => {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       let apiUrl;
-      if (user?.role === 'national_commissioner' || 
-          user?.role === 'national-commissioner' ||
-          user?.role === 'super_admin' || 
-          user?.role === 'super-admin' || 
-          user?.role === 'admin') {
+
+      if (
+        user?.role === 'national_commissioner' ||
+        user?.role === 'national-commissioner' ||
+        user?.role === 'super_admin' ||
+        user?.role === 'super-admin' ||
+        user?.role === 'admin'
+      ) {
         apiUrl = `${API_URL}/national/announcements/${id}`;
       } else {
         apiUrl = `${API_URL}/announcements/${id}`;
       }
 
       await axios.delete(apiUrl, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
-      setSuccess('✅ Announcement deleted successfully!');
+      setSuccess(
+        '✅ Announcement deleted successfully!'
+      );
+
       setTimeout(() => setSuccess(''), 3000);
+
       fetchAnnouncements();
-      
     } catch (err) {
-      console.error('❌ Delete announcement error:', err);
-      setError(err.response?.data?.message || '❌ Failed to delete announcement');
+      console.error(
+        '❌ Delete announcement error:',
+        err
+      );
+
+      setError(
+        err.response?.data?.message ||
+          '❌ Failed to delete announcement'
+      );
+
       setTimeout(() => setError(''), 3000);
     } finally {
       setDeletingId(null);
     }
   };
 
-  // ✅ Handle form input changes
+  // ============================================================
+  // HANDLE FORM INPUT
+  // ============================================================
+
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
+    const {
+      name,
+      value,
+      type,
+      checked
+    } = e.target;
+
     if (name === 'audience') {
-      // ✅ Handle checkbox changes for audience
-      setFormData(prev => {
+      setFormData((prev) => {
         let newAudience = [...prev.audience];
+
         if (checked) {
-          // If "all" is selected, clear others
+          // If "all" is selected, remove other audiences
           if (value === 'all') {
             newAudience = ['all'];
           } else {
-            // Remove 'all' if it exists
-            newAudience = newAudience.filter(a => a !== 'all');
-            // Add the new value if not already present
+            // Remove all
+            newAudience = newAudience.filter(
+              (a) => a !== 'all'
+            );
+
             if (!newAudience.includes(value)) {
               newAudience.push(value);
             }
           }
         } else {
-          // Remove the value
-          newAudience = newAudience.filter(a => a !== value);
-          // If no values left, default to 'all'
+          newAudience = newAudience.filter(
+            (a) => a !== value
+          );
+
           if (newAudience.length === 0) {
             newAudience = ['all'];
           }
         }
-        return { ...prev, audience: newAudience };
+
+        return {
+          ...prev,
+          audience: newAudience
+        };
       });
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]:
+          type === 'checkbox'
+            ? checked
+            : value
       }));
     }
-    if (error) setError('');
+
+    if (error) {
+      setError('');
+    }
   };
 
-  // ✅ Reset form
+  // ============================================================
+  // RESET FORM
+  // ============================================================
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -231,122 +364,406 @@ const Announcements = () => {
       send_email: false,
       schedule_date: ''
     });
+
+    setEditingId(null);
     setError('');
     setSuccess('');
   };
 
-  // ✅ Open create modal
+  // ============================================================
+  // OPEN CREATE MODAL
+  // ============================================================
+
   const handleOpenCreateModal = () => {
     resetForm();
     setShowCreateModal(true);
   };
 
-  // ✅ Close create modal
+  // ============================================================
+  // OPEN EDIT MODAL
+  // ============================================================
+
+  const handleEditAnnouncement = (announcement) => {
+    if (!canManageAnnouncements) {
+      setError(
+        '❌ You do not have permission to edit announcements'
+      );
+
+      setTimeout(() => setError(''), 3000);
+
+      return;
+    }
+
+    console.log(
+      '✏️ Editing announcement:',
+      announcement
+    );
+
+    let audienceValue = announcement.audience;
+
+    if (!audienceValue) {
+      audienceValue = ['all'];
+    } else if (typeof audienceValue === 'string') {
+      try {
+        const parsed =
+          JSON.parse(audienceValue);
+
+        if (Array.isArray(parsed)) {
+          audienceValue = parsed;
+        } else {
+          audienceValue = [audienceValue];
+        }
+      } catch (parseError) {
+        if (audienceValue.includes(',')) {
+          audienceValue = audienceValue
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+        } else {
+          audienceValue = [audienceValue];
+        }
+      }
+    }
+
+    if (!Array.isArray(audienceValue)) {
+      audienceValue = ['all'];
+    }
+
+    if (audienceValue.length === 0) {
+      audienceValue = ['all'];
+    }
+
+    // Convert scheduled date into datetime-local format
+    let scheduleDate = '';
+
+    if (announcement.schedule_date) {
+      const date = new Date(
+        announcement.schedule_date
+      );
+
+      if (!Number.isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(
+          date.getMonth() + 1
+        ).padStart(2, '0');
+        const day = String(
+          date.getDate()
+        ).padStart(2, '0');
+        const hours = String(
+          date.getHours()
+        ).padStart(2, '0');
+        const minutes = String(
+          date.getMinutes()
+        ).padStart(2, '0');
+
+        scheduleDate =
+          `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+    }
+
+    setFormData({
+      title: announcement.title || '',
+      content: announcement.content || '',
+      announcement_type:
+        announcement.announcement_type ||
+        'general',
+      district:
+        announcement.district || 'all',
+      audience: audienceValue,
+      send_email:
+        announcement.send_email === true ||
+        announcement.send_email === 1 ||
+        announcement.send_email === 'true',
+      schedule_date: scheduleDate
+    });
+
+    setEditingId(announcement.id);
+    setError('');
+    setSuccess('');
+    setShowCreateModal(true);
+  };
+
+  // ============================================================
+  // CLOSE MODAL
+  // ============================================================
+
   const handleCloseCreateModal = () => {
+    if (creating || editing) {
+      return;
+    }
+
     setShowCreateModal(false);
     resetForm();
   };
 
-  // ✅ Create announcement
+  // ============================================================
+  // CREATE / UPDATE ANNOUNCEMENT
+  // ============================================================
+
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       setError('Title is required');
       return;
     }
+
     if (!formData.content.trim()) {
       setError('Content is required');
       return;
     }
 
-    setCreating(true);
+    if (
+      !Array.isArray(formData.audience) ||
+      formData.audience.length === 0
+    ) {
+      setError('Please select at least one audience');
+      return;
+    }
+
+    if (editingId) {
+      setEditing(true);
+    } else {
+      setCreating(true);
+    }
+
     setError('');
     setSuccess('');
 
     try {
       const token = localStorage.getItem('token');
-      
+
       const submitData = {
-        title: formData.title,
-        content: formData.content,
-        announcement_type: formData.announcement_type,
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        announcement_type:
+          formData.announcement_type,
         district: formData.district,
         audience: formData.audience,
         send_email: formData.send_email,
-        schedule_date: formData.schedule_date
+        schedule_date:
+          formData.schedule_date || null
       };
 
-      console.log('📤 Submitting announcement:', submitData);
+      console.log(
+        editingId
+          ? '📤 Updating announcement:'
+          : '📤 Creating announcement:',
+        submitData
+      );
 
-      const response = await axios.post(`${API_URL}/national/announcements`, submitData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      if (editingId) {
+        // ====================================================
+        // UPDATE EXISTING ANNOUNCEMENT
+        // ====================================================
 
-      console.log('✅ Announcement created:', response.data);
+        const response = await axios.put(
+          `${API_URL}/national/announcements/${editingId}`,
+          submitData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type':
+                'application/json'
+            }
+          }
+        );
 
-      setSuccess('✅ Announcement created successfully!');
-      setTimeout(() => setSuccess(''), 4000);
-      
+        console.log(
+          '✅ Announcement updated:',
+          response.data
+        );
+
+        setSuccess(
+          '✅ Announcement updated successfully!'
+        );
+      } else {
+        // ====================================================
+        // CREATE NEW ANNOUNCEMENT
+        // ====================================================
+
+        const response = await axios.post(
+          `${API_URL}/national/announcements`,
+          submitData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type':
+                'application/json'
+            }
+          }
+        );
+
+        console.log(
+          '✅ Announcement created:',
+          response.data
+        );
+
+        setSuccess(
+          '✅ Announcement created successfully!'
+        );
+      }
+
+      setTimeout(() => {
+        setSuccess('');
+      }, 4000);
+
       setShowCreateModal(false);
       resetForm();
-      fetchAnnouncements();
 
+      await fetchAnnouncements();
     } catch (err) {
-      console.error('❌ Create announcement error:', err);
-      console.error('❌ Error response:', err.response?.data);
-      setError(err.response?.data?.message || 'Failed to create announcement');
+      console.error(
+        editingId
+          ? '❌ Update announcement error:'
+          : '❌ Create announcement error:',
+        err
+      );
+
+      console.error(
+        '❌ Error response:',
+        err.response?.data
+      );
+
+      setError(
+        err.response?.data?.message ||
+          (editingId
+            ? 'Failed to update announcement'
+            : 'Failed to create announcement')
+      );
     } finally {
       setCreating(false);
+      setEditing(false);
     }
   };
 
-  // ✅ Edit announcement (navigate to edit page)
-  const handleEditAnnouncement = (id) => {
-    navigate(`/edit-announcement/${id}`);
-  };
+  // ============================================================
+  // RETRY
+  // ============================================================
 
-  // ✅ Retry function
   const handleRetry = () => {
     fetchAnnouncements();
   };
 
-  // ✅ Get audience display labels
+  // ============================================================
+  // GET AUDIENCE LABELS
+  // ============================================================
+
   const getAudienceLabels = (audience) => {
-    if (!audience) return 'Everyone';
-    
+    if (!audience) {
+      return 'Everyone';
+    }
+
     let audienceArray = audience;
+
     if (typeof audience === 'string') {
-      if (audience.includes(',')) {
-        audienceArray = audience.split(',').map(a => a.trim());
-      } else {
-        audienceArray = [audience];
+      try {
+        const parsed =
+          JSON.parse(audience);
+
+        if (Array.isArray(parsed)) {
+          audienceArray = parsed;
+        } else if (audience.includes(',')) {
+          audienceArray = audience
+            .split(',')
+            .map((a) => a.trim());
+        } else {
+          audienceArray = [audience];
+        }
+      } catch (error) {
+        if (audience.includes(',')) {
+          audienceArray = audience
+            .split(',')
+            .map((a) => a.trim());
+        } else {
+          audienceArray = [audience];
+        }
       }
     }
-    
+
     if (!Array.isArray(audienceArray)) {
       audienceArray = [audienceArray];
     }
-    
+
     if (audienceArray.includes('all')) {
       return 'Everyone';
     }
-    
-    const labels = audienceArray.map(val => {
-      const option = audienceOptions.find(opt => opt.value === val.trim());
-      return option ? option.label.replace(/[🌐🎯📋🏛️👑🤝📢]\s*/, '') : val.trim();
-    });
-    
-    return labels.join(', ') || 'Everyone';
+
+    const labels = audienceArray.map(
+      (val) => {
+        const option =
+          audienceOptions.find(
+            (opt) =>
+              opt.value ===
+              String(val).trim()
+          );
+
+        return option
+          ? option.label.replace(
+              /[🌐🎯📋🏛️👑🤝📢]\s*/,
+              ''
+            )
+          : String(val).trim();
+      }
+    );
+
+    return (
+      labels.join(', ') || 'Everyone'
+    );
   };
 
-  // ✅ Check if audience includes a specific value
+  // ============================================================
+  // CHECK AUDIENCE
+  // ============================================================
+
   const isAudienceSelected = (value) => {
     return formData.audience.includes(value);
   };
+
+  // ============================================================
+  // CHECK PUBLIC AUDIENCE
+  // ============================================================
+
+  const isPublicAnnouncement = (
+    announcement
+  ) => {
+    if (!announcement?.audience) {
+      return false;
+    }
+
+    let audience = announcement.audience;
+
+    if (typeof audience === 'string') {
+      try {
+        const parsed =
+          JSON.parse(audience);
+
+        if (Array.isArray(parsed)) {
+          audience = parsed;
+        } else {
+          audience = [audience];
+        }
+      } catch (error) {
+        audience = audience.includes(',')
+          ? audience
+              .split(',')
+              .map((item) =>
+                item.trim()
+              )
+          : [audience];
+      }
+    }
+
+    if (!Array.isArray(audience)) {
+      audience = [audience];
+    }
+
+    return audience.includes('public');
+  };
+
+  // ============================================================
+  // LOADING
+  // ============================================================
 
   if (loading) {
     return (
@@ -357,460 +774,728 @@ const Announcements = () => {
     );
   }
 
-  if (error) {
+  // ============================================================
+  // ERROR PAGE
+  // ============================================================
+
+  if (
+    error &&
+    announcements.length === 0 &&
+    !showCreateModal
+  ) {
     return (
       <div className="announcements-error">
-        <i className="fas fa-exclamation-circle" style={{ fontSize: '48px', color: '#dc3545' }}></i>
+        <i
+          className="fas fa-exclamation-circle"
+          style={{
+            fontSize: '48px',
+            color: '#dc3545'
+          }}
+        ></i>
+
         <h3>Error Loading Announcements</h3>
+
         <p>{error}</p>
-        <button onClick={handleRetry} className="btn-primary">
-          <i className="fas fa-redo"></i> Retry
+
+        <button
+          onClick={handleRetry}
+          className="btn-primary"
+        >
+          <i className="fas fa-redo"></i>{' '}
+          Retry
         </button>
       </div>
-    );
-  }
-
-  if (announcements.length === 0) {
-    return (
-      <>
-        <div className="announcements-empty">
-          <i className="fas fa-bullhorn" style={{ fontSize: '48px', color: '#ccc' }}></i>
-          <h3>No Announcements</h3>
-          <p>There are no announcements at this time.</p>
-          {canManageAnnouncements && (
-            <button className="btn-primary" onClick={handleOpenCreateModal}>
-              <i className="fas fa-plus"></i> Create Announcement
-            </button>
-          )}
-        </div>
-
-        {/* ✅ Create Modal */}
-        {showCreateModal && (
-          <div className="modal-overlay" onClick={handleCloseCreateModal}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3><i className="fas fa-plus-circle" style={{ color: '#FFD100' }}></i> Create Announcement</h3>
-                <button className="modal-close" onClick={handleCloseCreateModal}>
-                  <i className="fas fa-times"></i>
-                </button>
-              </div>
-              <form onSubmit={handleCreateAnnouncement}>
-                <div className="modal-body">
-                  {error && (
-                    <div className="alert alert-error">
-                      <i className="fas fa-exclamation-circle"></i>
-                      <p>{error}</p>
-                    </div>
-                  )}
-                  {success && (
-                    <div className="alert alert-success">
-                      <i className="fas fa-check-circle"></i>
-                      <p>{success}</p>
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label>Title <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      placeholder="Enter announcement title"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Content <span className="required">*</span></label>
-                    <textarea
-                      name="content"
-                      value={formData.content}
-                      onChange={handleChange}
-                      rows="5"
-                      placeholder="Write your announcement content..."
-                      required
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Announcement Type</label>
-                      <select
-                        name="announcement_type"
-                        value={formData.announcement_type}
-                        onChange={handleChange}
-                      >
-                        {announcementTypes.map(type => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>District</label>
-                      <select
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                      >
-                        {districts.map(district => (
-                          <option key={district} value={district}>
-                            {district === 'all' ? 'All Districts' : district}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* ✅ Audience Checkboxes */}
-                  <div className="form-group">
-                    <label>Audience <span className="required">*</span></label>
-                    <div className="audience-checkboxes">
-                      {audienceOptions.map((option) => (
-                        <label key={option.value} className="audience-checkbox">
-                          <input
-                            type="checkbox"
-                            name="audience"
-                            value={option.value}
-                            checked={isAudienceSelected(option.value)}
-                            onChange={handleChange}
-                          />
-                          <span className="checkbox-label-text">{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <small className="form-hint">
-                      <i className="fas fa-info-circle"></i>
-                      Select multiple audiences. <strong>Public Site</strong> makes it visible on the landing page.
-                      <br />
-                      <span className="selected-audience">
-                        Selected: <strong>{getAudienceLabels(formData.audience)}</strong>
-                      </span>
-                    </small>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Schedule Date (Optional)</label>
-                      <input
-                        type="datetime-local"
-                        name="schedule_date"
-                        value={formData.schedule_date}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group checkbox-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        name="send_email"
-                        checked={formData.send_email}
-                        onChange={handleChange}
-                      />
-                      <span>Send email notification to recipients</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="form-actions">
-                  <button type="button" className="btn-secondary" onClick={handleCloseCreateModal}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary" disabled={creating}>
-                    {creating ? (
-                      <>
-                        <span className="loading-spinner"></span> Creating...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-paper-plane"></i> Publish
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </>
     );
   }
 
   return (
     <>
       <div className="announcements-container">
+
+        {/* ====================================================
+            HEADER
+        ==================================================== */}
+
         <div className="announcements-header">
           <h2>
-            <i className="fas fa-bullhorn" style={{ color: '#FFD100' }}></i> 
+            <i
+              className="fas fa-bullhorn"
+              style={{
+                color: '#FFD100'
+              }}
+            ></i>
+
             Announcements
-            <span className="announcement-count">{announcements.length}</span>
+
+            <span className="announcement-count">
+              {announcements.length}
+            </span>
           </h2>
+
           {canManageAnnouncements && (
-            <button className="btn-primary" onClick={handleOpenCreateModal}>
-              <i className="fas fa-plus"></i> New Announcement
+            <button
+              className="btn-primary"
+              onClick={
+                handleOpenCreateModal
+              }
+            >
+              <i className="fas fa-plus"></i>{' '}
+              New Announcement
             </button>
           )}
         </div>
 
+        {/* ====================================================
+            SUCCESS MESSAGE
+        ==================================================== */}
+
         {success && (
           <div className="alert alert-success">
             <i className="fas fa-check-circle"></i>
+
             <div>
-              <strong>Success</strong>
+              <strong>
+                Success
+              </strong>
+
               <p>{success}</p>
             </div>
           </div>
         )}
 
+        {/* ====================================================
+            ERROR MESSAGE
+        ==================================================== */}
+
         {error && (
           <div className="alert alert-error">
             <i className="fas fa-exclamation-circle"></i>
+
             <div>
-              <strong>Error</strong>
+              <strong>
+                Error
+              </strong>
+
               <p>{error}</p>
             </div>
           </div>
         )}
 
-        <div className="announcements-list">
-          {announcements.map((announcement) => (
-            <div key={announcement.id} className="announcement-card">
-              <div className="announcement-header">
-                <div className="announcement-title">
-                  <h3>{announcement.title}</h3>
-                  <span className={`announcement-type ${announcement.announcement_type || 'general'}`}>
-                    {announcement.announcement_type || 'general'}
-                  </span>
-                </div>
-                <div className="announcement-meta">
-                  {announcement.district === 'all' && (
-                    <span className="national-badge">
-                      <i className="fas fa-flag"></i> National
-                    </span>
-                  )}
-                  {announcement.district && announcement.district !== 'all' && (
-                    <span className="district-badge">
-                      <i className="fas fa-map-marker-alt"></i> {announcement.district}
-                    </span>
-                  )}
-                  {announcement.audience && announcement.audience.includes('public') && (
-                    <span className="public-badge">
-                      <i className="fas fa-globe"></i> Public
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="announcement-content">
-                <p>{announcement.content}</p>
-              </div>
-              
-              <div className="announcement-footer">
-                <div className="announcement-author">
-                  <i className="fas fa-user"></i> 
-                  <span>{announcement.author?.full_name || 'Unknown'}</span>
-                </div>
-                <div className="announcement-date">
-                  <i className="fas fa-calendar"></i> 
-                  <span>{new Date(announcement.created_at).toLocaleDateString('en-RW', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}</span>
-                </div>
-                <div className="announcement-audience">
-                  <i className="fas fa-users"></i>
-                  <span className="audience-label">{getAudienceLabels(announcement.audience)}</span>
-                </div>
-                {canManageAnnouncements && (
-                  <div className="announcement-actions">
-                    <button 
-                      className="btn-sm btn-edit" 
-                      title="Edit"
-                      onClick={() => handleEditAnnouncement(announcement.id)}
-                    >
-                      <i className="fas fa-edit"></i>
-                    </button>
-                    <button 
-                      className="btn-sm btn-delete" 
-                      title="Delete"
-                      onClick={() => handleDelete(announcement.id)}
-                      disabled={deletingId === announcement.id}
-                    >
-                      {deletingId === announcement.id ? (
-                        <i className="fas fa-spinner fa-spin"></i>
-                      ) : (
-                        <i className="fas fa-trash"></i>
+        {/* ====================================================
+            EMPTY STATE
+        ==================================================== */}
+
+        {announcements.length === 0 ? (
+          <div className="announcements-empty">
+            <i
+              className="fas fa-bullhorn"
+              style={{
+                fontSize: '48px',
+                color: '#ccc'
+              }}
+            ></i>
+
+            <h3>
+              No Announcements
+            </h3>
+
+            <p>
+              There are no announcements
+              at this time.
+            </p>
+
+            {canManageAnnouncements && (
+              <button
+                className="btn-primary"
+                onClick={
+                  handleOpenCreateModal
+                }
+              >
+                <i className="fas fa-plus"></i>{' '}
+                Create Announcement
+              </button>
+            )}
+          </div>
+        ) : (
+          /* ====================================================
+             ANNOUNCEMENT LIST
+          ==================================================== */
+
+          <div className="announcements-list">
+            {announcements.map(
+              (announcement) => (
+                <div
+                  key={announcement.id}
+                  className="announcement-card"
+                >
+
+                  {/* HEADER */}
+
+                  <div className="announcement-header">
+
+                    <div className="announcement-title">
+                      <h3>
+                        {
+                          announcement.title
+                        }
+                      </h3>
+
+                      <span
+                        className={`announcement-type ${
+                          announcement.announcement_type ||
+                          'general'
+                        }`}
+                      >
+                        {
+                          announcement.announcement_type ||
+                          'general'
+                        }
+                      </span>
+                    </div>
+
+                    <div className="announcement-meta">
+
+                      {announcement.district ===
+                        'all' && (
+                        <span className="national-badge">
+                          <i className="fas fa-flag"></i>{' '}
+                          National
+                        </span>
                       )}
-                    </button>
+
+                      {announcement.district &&
+                        announcement.district !==
+                          'all' && (
+                          <span className="district-badge">
+                            <i className="fas fa-map-marker-alt"></i>{' '}
+                            {
+                              announcement.district
+                            }
+                          </span>
+                        )}
+
+                      {isPublicAnnouncement(
+                        announcement
+                      ) && (
+                        <span className="public-badge">
+                          <i className="fas fa-globe"></i>{' '}
+                          Public
+                        </span>
+                      )}
+
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+
+                  {/* CONTENT */}
+
+                  <div className="announcement-content">
+                    <p>
+                      {
+                        announcement.content
+                      }
+                    </p>
+                  </div>
+
+                  {/* FOOTER */}
+
+                  <div className="announcement-footer">
+
+                    <div className="announcement-author">
+                      <i className="fas fa-user"></i>
+
+                      <span>
+                        {
+                          announcement.author
+                            ?.full_name ||
+                          'Unknown'
+                        }
+                      </span>
+                    </div>
+
+                    <div className="announcement-date">
+                      <i className="fas fa-calendar"></i>
+
+                      <span>
+                        {announcement.created_at
+                          ? new Date(
+                              announcement.created_at
+                            ).toLocaleDateString(
+                              'en-RW',
+                              {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }
+                            )
+                          : 'Unknown date'}
+                      </span>
+                    </div>
+
+                    <div className="announcement-audience">
+                      <i className="fas fa-users"></i>
+
+                      <span className="audience-label">
+                        {
+                          getAudienceLabels(
+                            announcement.audience
+                          )
+                        }
+                      </span>
+                    </div>
+
+                    {canManageAnnouncements && (
+                      <div className="announcement-actions">
+
+                        {/* EDIT */}
+
+                        <button
+                          className="btn-sm btn-edit"
+                          title="Edit"
+                          onClick={() =>
+                            handleEditAnnouncement(
+                              announcement
+                            )
+                          }
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+
+                        {/* DELETE */}
+
+                        <button
+                          className="btn-sm btn-delete"
+                          title="Delete"
+                          onClick={() =>
+                            handleDelete(
+                              announcement.id
+                            )
+                          }
+                          disabled={
+                            deletingId ===
+                            announcement.id
+                          }
+                        >
+                          {deletingId ===
+                          announcement.id ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                          ) : (
+                            <i className="fas fa-trash"></i>
+                          )}
+                        </button>
+
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ✅ Create Modal */}
+      {/* ======================================================
+          CREATE / EDIT MODAL
+      ====================================================== */}
+
       {showCreateModal && (
-        <div className="modal-overlay" onClick={handleCloseCreateModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={
+            handleCloseCreateModal
+          }
+        >
+          <div
+            className="modal-content"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            {/* MODAL HEADER */}
+
             <div className="modal-header">
-              <h3><i className="fas fa-plus-circle" style={{ color: '#FFD100' }}></i> Create Announcement</h3>
-              <button className="modal-close" onClick={handleCloseCreateModal}>
+
+              <h3>
+                <i
+                  className={
+                    editingId
+                      ? 'fas fa-edit'
+                      : 'fas fa-plus-circle'
+                  }
+                  style={{
+                    color: '#FFD100'
+                  }}
+                ></i>
+
+                {editingId
+                  ? 'Edit Announcement'
+                  : 'Create Announcement'}
+              </h3>
+
+              <button
+                className="modal-close"
+                onClick={
+                  handleCloseCreateModal
+                }
+                disabled={
+                  creating || editing
+                }
+              >
                 <i className="fas fa-times"></i>
               </button>
+
             </div>
-            <form onSubmit={handleCreateAnnouncement}>
+
+            {/* FORM */}
+
+            <form
+              onSubmit={
+                handleCreateAnnouncement
+              }
+            >
+
               <div className="modal-body">
+
+                {/* FORM ERROR */}
+
                 {error && (
                   <div className="alert alert-error">
                     <i className="fas fa-exclamation-circle"></i>
+
                     <p>{error}</p>
                   </div>
                 )}
+
+                {/* FORM SUCCESS */}
+
                 {success && (
                   <div className="alert alert-success">
                     <i className="fas fa-check-circle"></i>
+
                     <p>{success}</p>
                   </div>
                 )}
 
+                {/* TITLE */}
+
                 <div className="form-group">
-                  <label>Title <span className="required">*</span></label>
+                  <label>
+                    Title{' '}
+                    <span className="required">
+                      *
+                    </span>
+                  </label>
+
                   <input
                     type="text"
                     name="title"
-                    value={formData.title}
-                    onChange={handleChange}
+                    value={
+                      formData.title
+                    }
+                    onChange={
+                      handleChange
+                    }
                     placeholder="Enter announcement title"
                     required
                   />
                 </div>
 
+                {/* CONTENT */}
+
                 <div className="form-group">
-                  <label>Content <span className="required">*</span></label>
+                  <label>
+                    Content{' '}
+                    <span className="required">
+                      *
+                    </span>
+                  </label>
+
                   <textarea
                     name="content"
-                    value={formData.content}
-                    onChange={handleChange}
+                    value={
+                      formData.content
+                    }
+                    onChange={
+                      handleChange
+                    }
                     rows="5"
                     placeholder="Write your announcement content..."
                     required
                   />
                 </div>
 
+                {/* TYPE + DISTRICT */}
+
                 <div className="form-row">
+
                   <div className="form-group">
-                    <label>Announcement Type</label>
+                    <label>
+                      Announcement Type
+                    </label>
+
                     <select
                       name="announcement_type"
-                      value={formData.announcement_type}
-                      onChange={handleChange}
+                      value={
+                        formData.announcement_type
+                      }
+                      onChange={
+                        handleChange
+                      }
                     >
-                      {announcementTypes.map(type => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
+                      {announcementTypes.map(
+                        (type) => (
+                          <option
+                            key={
+                              type.value
+                            }
+                            value={
+                              type.value
+                            }
+                          >
+                            {
+                              type.label
+                            }
+                          </option>
+                        )
+                      )}
                     </select>
                   </div>
 
                   <div className="form-group">
-                    <label>District</label>
+                    <label>
+                      District
+                    </label>
+
                     <select
                       name="district"
-                      value={formData.district}
-                      onChange={handleChange}
+                      value={
+                        formData.district
+                      }
+                      onChange={
+                        handleChange
+                      }
                     >
-                      {districts.map(district => (
-                        <option key={district} value={district}>
-                          {district === 'all' ? 'All Districts' : district}
-                        </option>
-                      ))}
+                      {districts.map(
+                        (district) => (
+                          <option
+                            key={
+                              district
+                            }
+                            value={
+                              district
+                            }
+                          >
+                            {district ===
+                            'all'
+                              ? 'All Districts'
+                              : district}
+                          </option>
+                        )
+                      )}
                     </select>
                   </div>
+
                 </div>
 
-                {/* ✅ Audience Checkboxes */}
+                {/* AUDIENCE */}
+
                 <div className="form-group">
-                  <label>Audience <span className="required">*</span></label>
-                  <div className="audience-checkboxes">
-                    {audienceOptions.map((option) => (
-                      <label key={option.value} className="audience-checkbox">
-                        <input
-                          type="checkbox"
-                          name="audience"
-                          value={option.value}
-                          checked={isAudienceSelected(option.value)}
-                          onChange={handleChange}
-                        />
-                        <span className="checkbox-label-text">{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <small className="form-hint">
-                    <i className="fas fa-info-circle"></i>
-                    Select multiple audiences. <strong>Public Site</strong> makes it visible on the landing page.
-                    <br />
-                    <span className="selected-audience">
-                      Selected: <strong>{getAudienceLabels(formData.audience)}</strong>
+
+                  <label>
+                    Audience{' '}
+                    <span className="required">
+                      *
                     </span>
+                  </label>
+
+                  <div className="audience-checkboxes">
+
+                    {audienceOptions.map(
+                      (option) => (
+                        <label
+                          key={
+                            option.value
+                          }
+                          className="audience-checkbox"
+                        >
+                          <input
+                            type="checkbox"
+                            name="audience"
+                            value={
+                              option.value
+                            }
+                            checked={isAudienceSelected(
+                              option.value
+                            )}
+                            onChange={
+                              handleChange
+                            }
+                          />
+
+                          <span className="checkbox-label-text">
+                            {
+                              option.label
+                            }
+                          </span>
+                        </label>
+                      )
+                    )}
+
+                  </div>
+
+                  <small className="form-hint">
+
+                    <i className="fas fa-info-circle"></i>
+
+                    Select multiple
+                    audiences.{' '}
+
+                    <strong>
+                      Public Site
+                    </strong>{' '}
+                    makes it visible on
+                    the landing page.
+
+                    <br />
+
+                    <span className="selected-audience">
+
+                      Selected:{' '}
+
+                      <strong>
+                        {
+                          getAudienceLabels(
+                            formData.audience
+                          )
+                        }
+                      </strong>
+
+                    </span>
+
                   </small>
+
                 </div>
+
+                {/* SCHEDULE */}
 
                 <div className="form-row">
+
                   <div className="form-group">
-                    <label>Schedule Date (Optional)</label>
+
+                    <label>
+                      Schedule Date
+                      (Optional)
+                    </label>
+
                     <input
                       type="datetime-local"
                       name="schedule_date"
-                      value={formData.schedule_date}
-                      onChange={handleChange}
+                      value={
+                        formData.schedule_date
+                      }
+                      onChange={
+                        handleChange
+                      }
                     />
+
                   </div>
+
                 </div>
 
+                {/* EMAIL */}
+
                 <div className="form-group checkbox-group">
+
                   <label className="checkbox-label">
+
                     <input
                       type="checkbox"
                       name="send_email"
-                      checked={formData.send_email}
-                      onChange={handleChange}
+                      checked={
+                        formData.send_email
+                      }
+                      onChange={
+                        handleChange
+                      }
                     />
-                    <span>Send email notification to recipients</span>
+
+                    <span>
+                      Send email notification
+                      to recipients
+                    </span>
+
                   </label>
+
                 </div>
+
               </div>
+
+              {/* ACTIONS */}
+
               <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={handleCloseCreateModal}>
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={
+                    handleCloseCreateModal
+                  }
+                  disabled={
+                    creating || editing
+                  }
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary" disabled={creating}>
-                  {creating ? (
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={
+                    creating || editing
+                  }
+                >
+                  {creating ||
+                  editing ? (
                     <>
-                      <span className="loading-spinner"></span> Creating...
+                      <span className="loading-spinner"></span>
+
+                      {editing
+                        ? ' Updating...'
+                        : ' Creating...'}
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-paper-plane"></i> Publish
+                      <i
+                        className={
+                          editingId
+                            ? 'fas fa-save'
+                            : 'fas fa-paper-plane'
+                        }
+                      ></i>
+
+                      {editingId
+                        ? ' Update Announcement'
+                        : ' Publish'}
                     </>
                   )}
                 </button>
+
               </div>
+
             </form>
           </div>
         </div>
       )}
 
+      {/* ======================================================
+          STYLES
+      ====================================================== */}
+
       <style jsx>{`
+
         .announcements-container {
           padding: 20px;
           max-width: 1200px;
@@ -1077,6 +1762,11 @@ const Announcements = () => {
           background: #e5e7eb;
         }
 
+        .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         .announcements-loading,
         .announcements-error,
         .announcements-empty {
@@ -1098,8 +1788,13 @@ const Announcements = () => {
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         .announcements-error h3,
@@ -1234,6 +1929,7 @@ const Announcements = () => {
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.2);
         }
 
         .modal-header {
@@ -1242,6 +1938,10 @@ const Announcements = () => {
           align-items: center;
           padding: 16px 24px;
           border-bottom: 1px solid #e5e7eb;
+          position: sticky;
+          top: 0;
+          background: white;
+          z-index: 2;
         }
 
         .modal-header h3 {
@@ -1262,6 +1962,11 @@ const Announcements = () => {
 
         .modal-close:hover {
           color: #374151;
+        }
+
+        .modal-close:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .modal-body {
@@ -1290,6 +1995,7 @@ const Announcements = () => {
           font-size: 14px;
           font-family: inherit;
           transition: border-color 0.2s;
+          box-sizing: border-box;
         }
 
         .form-group input:focus,
@@ -1321,6 +2027,10 @@ const Announcements = () => {
           justify-content: flex-end;
           padding: 16px 24px;
           border-top: 1px solid #e5e7eb;
+          position: sticky;
+          bottom: 0;
+          background: white;
+          z-index: 2;
         }
 
         .loading-spinner {
@@ -1331,9 +2041,16 @@ const Announcements = () => {
           border-top: 2px solid #1a1a1a;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
+          vertical-align: middle;
+          margin-right: 5px;
         }
 
         @media (max-width: 768px) {
+
+          .announcements-container {
+            padding: 12px;
+          }
+
           .announcements-header {
             flex-direction: column;
             align-items: stretch;
@@ -1347,6 +2064,15 @@ const Announcements = () => {
           .announcement-footer {
             flex-direction: column;
             align-items: flex-start;
+          }
+
+          .announcement-actions {
+            width: 100%;
+          }
+
+          .btn-sm {
+            min-width: 40px;
+            justify-content: center;
           }
 
           .form-row {
@@ -1365,12 +2091,18 @@ const Announcements = () => {
           .modal-content {
             max-width: 95%;
             margin: 10px;
+            max-height: 95vh;
+          }
+
+          .modal-body {
+            padding: 18px;
           }
 
           .audience-checkboxes {
             grid-template-columns: 1fr;
           }
         }
+
       `}</style>
     </>
   );

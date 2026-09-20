@@ -1,17 +1,14 @@
-
-// src/components/layout/Sidebar.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import usePermissions from '../../hooks/usePermissions';
 import axios from 'axios';
 
-const BASE_URL =
-  process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 const API_URL =
   process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const BASE_URL =
+  API_URL.replace(/\/api\/?$/, '');
 
 const Sidebar = () => {
   const { user } = useAuth();
