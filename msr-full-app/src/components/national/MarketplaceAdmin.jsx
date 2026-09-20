@@ -1,4 +1,5 @@
 // src/components/national/MarketplaceAdmin.jsx
+
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
@@ -7,156 +8,112 @@ const API_URL =
   process.env.REACT_APP_BACKEND_URL ||
   'http://localhost:5000/api';
 
-// API_URL ends with /api.
-// BASE_URL is the backend root and is used for uploaded images/files.
 const BASE_URL = API_URL.replace(/\/api\/?$/, '');
 
 const SCOUT = {
   purple: '#6A1B9A',
+  dark: '#4A148C',
+  blue: '#002B5C',
   gold: '#FFD100',
-  green: '#2E7D32',
-  blue: '#2196F3',
-  red: '#D32F2F',
-  navy: '#002B5C',
-  white: '#FFFFFF',
-  background: '#F7F8FA',
-  text: '#1F2937',
-  muted: '#6B7280',
-  border: '#E5E7EB',
-  lightPurple: '#F3E5F5',
-  lightGreen: '#E8F5E9',
-  lightRed: '#FFEBEE',
-  lightBlue: '#E3F2FD',
+  border: '#e5e7eb',
+  text: '#1f2937',
+  muted: '#6b7280',
+  background: '#f7f8fc',
 };
 
-const getToken = () => {
-  return (
-    localStorage.getItem('token') ||
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('authToken') ||
-    ''
-  );
-};
+const getToken = () =>
+  localStorage.getItem('token') ||
+  localStorage.getItem('accessToken') ||
+  localStorage.getItem('authToken') ||
+  '';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = getToken();
+api.interceptors.request.use((config) => {
+  const token = getToken();
 
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+  return config;
+});
 
-const EMPTY_PRODUCT = {
+const emptyProduct = {
   name: '',
   description: '',
   price: '',
-  category: 'uniform',
+  category: '',
   stock: '',
-  image_url: '',
-  specifications: {
-    Size: '',
-    Color: '',
-    Material: '',
-  },
+  seller_name: '',
+  seller_phone: '',
+  seller_email: '',
+  location: '',
+  status: 'active',
 };
 
-const DEFAULT_CATEGORIES = [
-  'uniform',
-  'badges',
-  'camping gear',
-  'accessories',
-  'books',
-  'merchandise',
-];
-
-/*
- * Convert product image paths returned by the backend into
- * browser-accessible URLs.
- */
-const getMediaUrl = (url) => {
-  if (!url) return '';
-
-  const value = String(url).trim();
-
+const getMediaUrl = (value) => {
   if (!value) return '';
 
   if (
-    value.startsWith('data:') ||
-    value.startsWith('blob:')
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('data:')
   ) {
     return value;
   }
 
-  if (
-    value.startsWith('http://localhost:5000') ||
-    value.startsWith('http://127.0.0.1:5000')
-  ) {
-    const path = value.replace(
-      /^https?:\/\/(?:localhost|127\.0\.0\.1):5000/,
-      ''
-    );
+  let path = value;
 
-    return `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  if (!path.startsWith('/')) {
+    path = `/${path}`;
   }
 
-  if (/^https?:\/\//i.test(value)) {
-    return value;
+  if (path.startsWith('/api/uploads/')) {
+    path = path.replace('/api/uploads/', '/uploads/');
   }
 
-  let path = value.replace(/^\/+/, '');
-
-  if (path.startsWith('api/uploads/')) {
-    path = path.replace(/^api\//, '');
-  }
-
-  if (!path.startsWith('uploads/')) {
-    path = `uploads/${path}`;
-  }
-
-  return `${BASE_URL}/${path}`;
+  return `${BASE_URL}${path}`;
 };
 
 const MarketplaceAdmin = () => {
   const [activeSection, setActiveSection] = useState('products');
 
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [messages, setMessages] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [productError, setProductError] = useState('');
-  const [searchProduct, setSearchProduct] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
+  const [productForm, setProductForm] = useState(emptyProduct);
   const [productImage, setProductImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [productImagePreview, setProductImagePreview] = useState('');
   const [savingProduct, setSavingProduct] = useState(false);
 
-  const [messages, setMessages] = useState([]);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [messageError, setMessageError] = useState('');
-  const [searchMessage, setSearchMessage] = useState('');
-  const [messageFilter, setMessageFilter] = useState('all');
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [deletingMessage, setDeletingMessage] = useState(false);
 
+  const [stats, setStats] = useState({
+    products: 0,
+    activeProducts: 0,
+    messages: 0,
+    unreadMessages: 0,
+  });
+
   const loadProducts = async () => {
     setLoadingProducts(true);
-    setProductError('');
+    setError('');
 
     try {
       const response = await api.get('/admin/products');
@@ -168,12 +125,25 @@ const MarketplaceAdmin = () => {
         [];
 
       setProducts(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Load products error:', error);
 
-      setProductError(
-        error.response?.data?.message ||
-        'Unable to load products.'
+      const list = Array.isArray(data) ? data : [];
+
+      setStats((previous) => ({
+        ...previous,
+        products: list.length,
+        activeProducts: list.filter(
+          (item) =>
+            item.status === 'active' ||
+            item.is_active === true ||
+            item.isActive === true
+        ).length,
+      }));
+    } catch (err) {
+      console.error('Load products error:', err);
+
+      setError(
+        err.response?.data?.message ||
+          'Failed to load marketplace products.'
       );
     } finally {
       setLoadingProducts(false);
@@ -182,9 +152,7 @@ const MarketplaceAdmin = () => {
 
   const loadCategories = async () => {
     try {
-      const response = await api.get(
-        '/public/marketplace/categories'
-      );
+      const response = await api.get('/public/marketplace/categories');
 
       const data =
         response.data?.categories ||
@@ -192,30 +160,16 @@ const MarketplaceAdmin = () => {
         response.data ||
         [];
 
-      if (Array.isArray(data) && data.length > 0) {
-        const normalized = data
-          .map((item) => {
-            if (typeof item === 'string') return item;
-
-            return item.name || item.category || '';
-          })
-          .filter(Boolean);
-
-        if (normalized.length > 0) {
-          setCategories(normalized);
-        }
+      if (Array.isArray(data)) {
+        setCategories(data);
       }
-    } catch (error) {
-      console.warn(
-        'Categories could not be loaded:',
-        error
-      );
+    } catch (err) {
+      console.error('Load categories error:', err);
     }
   };
 
   const loadMessages = async () => {
     setLoadingMessages(true);
-    setMessageError('');
 
     try {
       const response = await api.get('/admin/messages');
@@ -226,13 +180,26 @@ const MarketplaceAdmin = () => {
         response.data ||
         [];
 
-      setMessages(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Load messages error:', error);
+      const list = Array.isArray(data) ? data : [];
 
-      setMessageError(
-        error.response?.data?.message ||
-        'Unable to load messages.'
+      setMessages(list);
+
+      setStats((previous) => ({
+        ...previous,
+        messages: list.length,
+        unreadMessages: list.filter(
+          (item) =>
+            item.is_read === false ||
+            item.isRead === false ||
+            item.read === false
+        ).length,
+      }));
+    } catch (err) {
+      console.error('Load messages error:', err);
+
+      setError(
+        err.response?.data?.message ||
+          'Failed to load marketplace messages.'
       );
     } finally {
       setLoadingMessages(false);
@@ -245,20 +212,58 @@ const MarketplaceAdmin = () => {
     loadMessages();
   }, []);
 
+  useEffect(() => {
+    if (!success && !error) return;
+
+    const timer = setTimeout(() => {
+      setSuccess('');
+      setError('');
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [success, error]);
+
+  const filteredProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const matchesSearch =
+        !term ||
+        String(product.name || '')
+          .toLowerCase()
+          .includes(term) ||
+        String(product.description || '')
+          .toLowerCase()
+          .includes(term) ||
+        String(product.category || '')
+          .toLowerCase()
+          .includes(term) ||
+        String(product.seller_name || product.sellerName || '')
+          .toLowerCase()
+          .includes(term);
+
+      const productCategory =
+        product.category ||
+        product.category_name ||
+        product.categoryName ||
+        '';
+
+      const matchesCategory =
+        !categoryFilter ||
+        String(productCategory).toLowerCase() ===
+          String(categoryFilter).toLowerCase();
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, search, categoryFilter]);
+
   const openAddProduct = () => {
     setEditingProduct(null);
-
-    setProductForm({
-      ...EMPTY_PRODUCT,
-      specifications: {
-        Size: '',
-        Color: '',
-        Material: '',
-      },
-    });
-
+    setProductForm(emptyProduct);
     setProductImage(null);
-    setImagePreview('');
+    setProductImagePreview('');
+    setError('');
+    setSuccess('');
     setShowProductModal(true);
   };
 
@@ -269,39 +274,53 @@ const MarketplaceAdmin = () => {
       name: product.name || '',
       description: product.description || '',
       price: product.price ?? '',
-      category: product.category || 'uniform',
-      stock: product.stock ?? '',
-      image_url: product.image_url || '',
-      specifications: {
-        Size:
-          product.specifications?.Size ||
-          product.specifications?.size ||
-          '',
-        Color:
-          product.specifications?.Color ||
-          product.specifications?.color ||
-          '',
-        Material:
-          product.specifications?.Material ||
-          product.specifications?.material ||
-          '',
-      },
+      category:
+        product.category ||
+        product.category_name ||
+        product.categoryName ||
+        '',
+      stock: product.stock ?? product.quantity ?? '',
+      seller_name:
+        product.seller_name ||
+        product.sellerName ||
+        '',
+      seller_phone:
+        product.seller_phone ||
+        product.sellerPhone ||
+        '',
+      seller_email:
+        product.seller_email ||
+        product.sellerEmail ||
+        '',
+      location: product.location || '',
+      status: product.status || 'active',
     });
 
     setProductImage(null);
-    setImagePreview(
-      getMediaUrl(product.image_url || '')
-    );
+
+    const existingImage =
+      product.image_url ||
+      product.imageUrl ||
+      product.image ||
+      product.photo ||
+      product.product_image ||
+      '';
+
+    setProductImagePreview(getMediaUrl(existingImage));
+
+    setError('');
+    setSuccess('');
     setShowProductModal(true);
   };
 
-  const closeProductModal = () => {
+  const closeProductPanel = () => {
     if (savingProduct) return;
 
     setShowProductModal(false);
     setEditingProduct(null);
+    setProductForm(emptyProduct);
     setProductImage(null);
-    setImagePreview('');
+    setProductImagePreview('');
   };
 
   const handleProductChange = (event) => {
@@ -313,65 +332,52 @@ const MarketplaceAdmin = () => {
     }));
   };
 
-  const handleSpecificationChange = (event) => {
-    const { name, value } = event.target;
-
-    setProductForm((previous) => ({
-      ...previous,
-      specifications: {
-        ...previous.specifications,
-        [name]: value,
-      },
-    }));
-  };
-
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
     setProductImage(file);
-    setImagePreview(URL.createObjectURL(file));
+
+    const previewUrl = URL.createObjectURL(file);
+    setProductImagePreview(previewUrl);
   };
 
   const saveProduct = async (event) => {
     event.preventDefault();
 
     if (!productForm.name.trim()) {
-      alert('Please enter the product name.');
+      setError('Product name is required.');
       return;
     }
 
-    if (
-      !productForm.price ||
-      Number(productForm.price) < 0
-    ) {
-      alert('Please enter a valid price.');
-      return;
-    }
-
-    if (
-      productForm.stock === '' ||
-      Number(productForm.stock) < 0
-    ) {
-      alert('Please enter a valid stock quantity.');
+    if (!productForm.price && productForm.price !== 0) {
+      setError('Product price is required.');
       return;
     }
 
     setSavingProduct(true);
+    setError('');
+    setSuccess('');
 
     try {
       const payload = {
         name: productForm.name.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price),
-        category: productForm.category,
-        stock: Number(productForm.stock),
-        image_url: productForm.image_url || null,
-        specifications: productForm.specifications,
+        category: productForm.category.trim(),
+        stock:
+          productForm.stock === ''
+            ? 0
+            : Number(productForm.stock),
+        seller_name: productForm.seller_name.trim(),
+        seller_phone: productForm.seller_phone.trim(),
+        seller_email: productForm.seller_email.trim(),
+        location: productForm.location.trim(),
+        status: productForm.status,
       };
 
-      let savedProduct;
+      let productId;
 
       if (editingProduct) {
         const response = await api.put(
@@ -379,28 +385,31 @@ const MarketplaceAdmin = () => {
           payload
         );
 
-        savedProduct =
+        const updated =
           response.data?.product ||
-          response.data?.data;
+          response.data?.data ||
+          response.data;
+
+        productId = updated?.id || editingProduct.id;
+
+        setSuccess('Product updated successfully.');
       } else {
         const response = await api.post(
           '/admin/products',
           payload
         );
 
-        savedProduct =
+        const created =
           response.data?.product ||
-          response.data?.data;
+          response.data?.data ||
+          response.data;
+
+        productId = created?.id;
+
+        setSuccess('Product created successfully.');
       }
 
-      if (
-        productImage &&
-        (savedProduct?.id || editingProduct?.id)
-      ) {
-        const productId =
-          savedProduct?.id ||
-          editingProduct.id;
-
+      if (productImage && productId) {
         const formData = new FormData();
 
         formData.append('image', productImage);
@@ -416,20 +425,17 @@ const MarketplaceAdmin = () => {
         );
       }
 
-      alert(
-        editingProduct
-          ? 'Product updated successfully.'
-          : 'Product uploaded successfully.'
-      );
-
-      closeProductModal();
       await loadProducts();
-    } catch (error) {
-      console.error('Save product error:', error);
 
-      alert(
-        error.response?.data?.message ||
-        'Unable to save product.'
+      setTimeout(() => {
+        closeProductPanel();
+      }, 500);
+    } catch (err) {
+      console.error('Save product error:', err);
+
+      setError(
+        err.response?.data?.message ||
+          'Failed to save product.'
       );
     } finally {
       setSavingProduct(false);
@@ -437,18 +443,19 @@ const MarketplaceAdmin = () => {
   };
 
   const deleteProduct = async (product) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete "${product.name}"?`
-      )
-    ) {
-      return;
-    }
+    if (!product?.id) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${product.name}"?`
+    );
+
+    if (!confirmed) return;
+
+    setError('');
+    setSuccess('');
 
     try {
-      await api.delete(
-        `/admin/products/${product.id}`
-      );
+      await api.delete(`/admin/products/${product.id}`);
 
       setProducts((previous) =>
         previous.filter(
@@ -456,162 +463,51 @@ const MarketplaceAdmin = () => {
         )
       );
 
-      alert('Product deleted successfully.');
-    } catch (error) {
-      console.error(
-        'Delete product error:',
-        error
-      );
+      setSuccess('Product deleted successfully.');
+    } catch (err) {
+      console.error('Delete product error:', err);
 
-      alert(
-        error.response?.data?.message ||
-        'Unable to delete product.'
+      setError(
+        err.response?.data?.message ||
+          'Failed to delete product.'
       );
     }
   };
 
-  const filteredProducts = useMemo(() => {
-    const search = searchProduct
-      .trim()
-      .toLowerCase();
+  const markMessageRead = async (message) => {
+    if (!message?.id) return;
 
-    return products.filter((product) => {
-      const matchesSearch =
-        !search ||
-        product.name
-          ?.toLowerCase()
-          .includes(search) ||
-        product.description
-          ?.toLowerCase()
-          .includes(search);
+    try {
+      await api.put(`/admin/messages/${message.id}/read`);
 
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        product.category
-          ?.toLowerCase() ===
-          categoryFilter.toLowerCase();
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [
-    products,
-    searchProduct,
-    categoryFilter,
-  ]);
-
-  const getStockStatus = (stock) => {
-    const quantity = Number(stock || 0);
-
-    if (quantity <= 0) {
-      return {
-        label: 'Out of Stock',
-        className: 'msr-status-out',
-      };
-    }
-
-    if (quantity < 5) {
-      return {
-        label: 'Low Stock',
-        className: 'msr-status-low',
-      };
-    }
-
-    return {
-      label: 'In Stock',
-      className: 'msr-status-in',
-    };
-  };
-
-  const unreadMessages = messages.filter(
-    (message) =>
-      String(message.status || '').toLowerCase() ===
-        'new' ||
-      String(message.status || '').toLowerCase() ===
-        'unread'
-  ).length;
-
-  const filteredMessages = useMemo(() => {
-    const search = searchMessage
-      .trim()
-      .toLowerCase();
-
-    return messages.filter((message) => {
-      const status = String(
-        message.status || 'new'
-      ).toLowerCase();
-
-      const matchesStatus =
-        messageFilter === 'all' ||
-        status === messageFilter;
-
-      const searchableText = [
-        message.name,
-        message.full_name,
-        message.email,
-        message.subject,
-        message.message,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      const matchesSearch =
-        !search ||
-        searchableText.includes(search);
-
-      return matchesStatus && matchesSearch;
-    });
-  }, [
-    messages,
-    searchMessage,
-    messageFilter,
-  ]);
-
-  const viewMessage = async (message) => {
-    setSelectedMessage(message);
-
-    const status = String(
-      message.status || ''
-    ).toLowerCase();
-
-    if (
-      status === 'new' ||
-      status === 'unread'
-    ) {
-      try {
-        await api.put(
-          `/admin/messages/${message.id}/read`
-        );
-
-        setMessages((previous) =>
-          previous.map((item) =>
-            item.id === message.id
-              ? {
-                  ...item,
-                  status: 'read',
-                }
-              : item
-          )
-        );
-
-        setSelectedMessage((previous) =>
-          previous
+      setMessages((previous) =>
+        previous.map((item) =>
+          item.id === message.id
             ? {
-                ...previous,
-                status: 'read',
+                ...item,
+                is_read: true,
+                isRead: true,
+                read: true,
               }
-            : previous
-        );
-      } catch (error) {
-        console.warn(
-          'Could not mark message as read:',
-          error
-        );
-      }
+            : item
+        )
+      );
+
+      setStats((previous) => ({
+        ...previous,
+        unreadMessages: Math.max(
+          0,
+          previous.unreadMessages - 1
+        ),
+      }));
+    } catch (err) {
+      console.error('Mark message read error:', err);
     }
   };
 
-  const markReplied = async (message) => {
+  const markMessageReplied = async (message) => {
+    if (!message?.id) return;
+
     try {
       await api.put(
         `/admin/messages/${message.id}/replied`
@@ -622,48 +518,37 @@ const MarketplaceAdmin = () => {
           item.id === message.id
             ? {
                 ...item,
-                status: 'replied',
+                replied: true,
+                is_replied: true,
               }
             : item
         )
       );
+    } catch (err) {
+      console.error('Mark message replied error:', err);
 
-      setSelectedMessage((previous) =>
-        previous
-          ? {
-              ...previous,
-              status: 'replied',
-            }
-          : previous
-      );
-    } catch (error) {
-      console.error(
-        'Mark replied error:',
-        error
-      );
-
-      alert(
-        error.response?.data?.message ||
-        'Unable to update message.'
+      setError(
+        err.response?.data?.message ||
+          'Failed to update message.'
       );
     }
   };
 
   const deleteMessage = async (message) => {
-    if (
-      !window.confirm(
-        'Are you sure you want to delete this message?'
-      )
-    ) {
-      return;
-    }
+    if (!message?.id) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this message?'
+    );
+
+    if (!confirmed) return;
 
     setDeletingMessage(true);
+    setError('');
+    setSuccess('');
 
     try {
-      await api.delete(
-        `/admin/messages/${message.id}`
-      );
+      await api.delete(`/admin/messages/${message.id}`);
 
       setMessages((previous) =>
         previous.filter(
@@ -672,577 +557,374 @@ const MarketplaceAdmin = () => {
       );
 
       setSelectedMessage(null);
-    } catch (error) {
-      console.error(
-        'Delete message error:',
-        error
-      );
 
-      alert(
-        error.response?.data?.message ||
-        'Unable to delete message.'
+      setStats((previous) => ({
+        ...previous,
+        messages: Math.max(
+          0,
+          previous.messages - 1
+        ),
+        unreadMessages:
+          message.is_read === false ||
+          message.isRead === false ||
+          message.read === false
+            ? Math.max(
+                0,
+                previous.unreadMessages - 1
+              )
+            : previous.unreadMessages,
+      }));
+
+      setSuccess('Message deleted successfully.');
+    } catch (err) {
+      console.error('Delete message error:', err);
+
+      setError(
+        err.response?.data?.message ||
+          'Failed to delete message.'
       );
     } finally {
       setDeletingMessage(false);
     }
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-RW').format(
-      Number(price || 0)
-    );
-  };
+  const viewMessage = async (message) => {
+    setSelectedMessage(message);
 
-  const formatDate = (date) => {
-    if (!date) return '—';
-
-    const parsed = new Date(date);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return date;
-    }
-
-    return parsed.toLocaleString('en-RW', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  };
-
-  const messageStatusClass = (status) => {
-    switch (
-      String(status || 'new').toLowerCase()
+    if (
+      message.is_read === false ||
+      message.isRead === false ||
+      message.read === false
     ) {
-      case 'read':
-        return 'msr-message-read';
-
-      case 'replied':
-        return 'msr-message-replied';
-
-      case 'archived':
-        return 'msr-message-archived';
-
-      case 'new':
-      case 'unread':
-      default:
-        return 'msr-message-new';
+      await markMessageRead(message);
     }
+  };
+
+  const formatPrice = (price) => {
+    const number = Number(price);
+
+    if (Number.isNaN(number)) {
+      return price || '0';
+    }
+
+    return new Intl.NumberFormat('en-RW', {
+      maximumFractionDigits: 0,
+    }).format(number);
+  };
+
+  const getProductImage = (product) => {
+    return getMediaUrl(
+      product.image_url ||
+        product.imageUrl ||
+        product.image ||
+        product.photo ||
+        product.product_image ||
+        ''
+    );
   };
 
   return (
     <>
       <style>{`
-        * {
+        .msr-marketplace {
+          min-height: 100vh;
+          background: ${SCOUT.background};
+          color: ${SCOUT.text};
+        }
+
+        /*
+         * IMPORTANT:
+         * The common dashboard Sidebar is outside this component.
+         * This component therefore never changes its position.
+         */
+
+        .msr-marketplace-inner {
+          width: 100%;
+          max-width: 1600px;
+          margin: 0 auto;
+          padding: 24px;
           box-sizing: border-box;
         }
 
-        .msr-admin {
-          min-height: 100vh;
+        .msr-page-header {
           display: flex;
-          background: ${SCOUT.background};
-          color: ${SCOUT.text};
-          font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-
-        .msr-admin-sidebar {
-          width: 250px;
-          min-height: 100vh;
-          background: ${SCOUT.navy};
-          color: ${SCOUT.white};
-          position: sticky;
-          top: 0;
-          align-self: flex-start;
-        }
-
-        .msr-admin-brand {
-          height: 76px;
-          display: flex;
-          align-items: center;
-          padding: 0 22px;
-          border-bottom: 1px solid rgba(255,255,255,.15);
-        }
-
-        .msr-admin-brand-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 10px;
-          background: ${SCOUT.gold};
-          color: ${SCOUT.navy};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          margin-right: 11px;
-          font-weight: 800;
-        }
-
-        .msr-admin-brand-text {
-          line-height: 1.15;
-        }
-
-        .msr-admin-brand-title {
-          font-size: 16px;
-          font-weight: 800;
-        }
-
-        .msr-admin-brand-subtitle {
-          font-size: 11px;
-          opacity: .7;
-          margin-top: 3px;
-        }
-
-        .msr-admin-nav {
-          padding: 24px 14px;
-        }
-
-        .msr-admin-nav-label {
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          opacity: .55;
-          padding: 0 12px 10px;
-        }
-
-        .msr-admin-nav-button {
-          width: 100%;
-          border: none;
-          background: transparent;
-          color: rgba(255,255,255,.78);
-          padding: 13px 14px;
-          margin-bottom: 6px;
-          border-radius: 9px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          cursor: pointer;
-          text-align: left;
-          font-size: 14px;
-          font-weight: 600;
-          transition: .2s ease;
-        }
-
-        .msr-admin-nav-button:hover {
-          background: rgba(255,255,255,.08);
-          color: ${SCOUT.white};
-        }
-
-        .msr-admin-nav-button.active {
-          background: ${SCOUT.purple};
-          color: ${SCOUT.white};
-          box-shadow: 0 5px 15px rgba(0,0,0,.15);
-        }
-
-        .msr-admin-nav-icon {
-          width: 22px;
-          text-align: center;
-          font-size: 18px;
-        }
-
-        .msr-message-count {
-          margin-left: auto;
-          min-width: 23px;
-          height: 23px;
-          padding: 0 6px;
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: ${SCOUT.red};
-          color: white;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .msr-admin-main {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .msr-admin-header {
-          height: 76px;
-          background: white;
-          border-bottom: 1px solid ${SCOUT.border};
-          display: flex;
-          align-items: center;
           justify-content: space-between;
-          padding: 0 30px;
-          position: sticky;
-          top: 0;
-          z-index: 10;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 22px;
         }
 
-        .msr-admin-header-title {
-          font-size: 21px;
+        .msr-page-title {
+          margin: 0;
+          color: ${SCOUT.dark};
+          font-size: 28px;
           font-weight: 800;
-          color: ${SCOUT.navy};
         }
 
-        .msr-admin-header-subtitle {
+        .msr-page-subtitle {
+          margin: 7px 0 0;
           color: ${SCOUT.muted};
-          font-size: 12px;
-          margin-top: 3px;
-        }
-
-        .msr-admin-user {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-weight: 700;
           font-size: 14px;
         }
 
-        .msr-admin-user-avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: ${SCOUT.lightPurple};
-          color: ${SCOUT.purple};
-          font-weight: 800;
-        }
-
-        .msr-admin-content {
-          padding: 30px;
-        }
-
-        .msr-stat-grid {
+        .msr-stats {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 18px;
-          margin-bottom: 26px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 15px;
+          margin-bottom: 22px;
         }
 
         .msr-stat-card {
-          background: white;
+          background: #fff;
           border: 1px solid ${SCOUT.border};
-          border-radius: 13px;
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          box-shadow: 0 2px 8px rgba(0,0,0,.03);
-        }
-
-        .msr-stat-icon {
-          width: 50px;
-          height: 50px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 23px;
-        }
-
-        .msr-stat-icon.products {
-          background: ${SCOUT.lightPurple};
-          color: ${SCOUT.purple};
-        }
-
-        .msr-stat-icon.low {
-          background: #FFF8E1;
-          color: #F57F17;
-        }
-
-        .msr-stat-icon.messages {
-          background: ${SCOUT.lightBlue};
-          color: ${SCOUT.blue};
+          border-radius: 14px;
+          padding: 18px;
+          box-shadow: 0 4px 14px rgba(0,0,0,.04);
         }
 
         .msr-stat-label {
-          font-size: 12px;
           color: ${SCOUT.muted};
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: .04em;
         }
 
-        .msr-stat-number {
+        .msr-stat-value {
+          margin-top: 7px;
+          color: ${SCOUT.dark};
           font-size: 25px;
           font-weight: 800;
-          color: ${SCOUT.navy};
-          margin-top: 3px;
+        }
+
+        .msr-management {
+          background: #fff;
+          border: 1px solid ${SCOUT.border};
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 5px 18px rgba(0,0,0,.04);
+        }
+
+        .msr-management-tabs {
+          display: flex;
+          gap: 3px;
+          padding: 8px;
+          border-bottom: 1px solid ${SCOUT.border};
+          background: #fafafa;
+        }
+
+        .msr-tab {
+          border: 0;
+          background: transparent;
+          color: ${SCOUT.muted};
+          padding: 11px 18px;
+          border-radius: 9px;
+          cursor: pointer;
+          font-weight: 700;
+        }
+
+        .msr-tab:hover {
+          background: #f0ebf5;
+          color: ${SCOUT.dark};
+        }
+
+        .msr-tab.active {
+          background: ${SCOUT.purple};
+          color: #fff;
         }
 
         .msr-toolbar {
-          background: white;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 13px;
-          padding: 16px;
           display: flex;
+          justify-content: space-between;
           align-items: center;
           gap: 12px;
-          margin-bottom: 18px;
-          flex-wrap: wrap;
+          padding: 18px;
+          border-bottom: 1px solid ${SCOUT.border};
         }
 
-        .msr-search {
+        .msr-toolbar-left {
+          display: flex;
+          gap: 10px;
           flex: 1;
-          min-width: 220px;
-          position: relative;
         }
 
-        .msr-search input {
+        .msr-input,
+        .msr-select,
+        .msr-textarea {
           width: 100%;
-          height: 42px;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 8px;
-          padding: 0 14px 0 40px;
-          outline: none;
-          font-size: 14px;
-        }
-
-        .msr-search input:focus {
-          border-color: ${SCOUT.purple};
-          box-shadow: 0 0 0 3px rgba(106,27,154,.1);
-        }
-
-        .msr-search-icon {
-          position: absolute;
-          left: 13px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: ${SCOUT.muted};
-        }
-
-        .msr-select {
-          height: 42px;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 8px;
-          background: white;
-          padding: 0 12px;
+          box-sizing: border-box;
+          border: 1px solid #d9dde5;
+          border-radius: 9px;
+          padding: 11px 12px;
+          background: #fff;
           color: ${SCOUT.text};
+          font-size: 14px;
           outline: none;
-          min-width: 150px;
+        }
+
+        .msr-input:focus,
+        .msr-select:focus,
+        .msr-textarea:focus {
+          border-color: ${SCOUT.purple};
+          box-shadow: 0 0 0 3px rgba(106,27,154,.08);
         }
 
         .msr-button {
-          border: none;
-          border-radius: 8px;
-          height: 42px;
-          padding: 0 17px;
-          font-weight: 700;
+          border: 0;
+          border-radius: 9px;
+          padding: 11px 17px;
           cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: .2s ease;
+          font-weight: 800;
           white-space: nowrap;
         }
 
-        .msr-button:disabled {
-          opacity: .6;
-          cursor: not-allowed;
-        }
-
-        .msr-button-primary {
+        .msr-button-purple {
           background: ${SCOUT.purple};
-          color: white;
+          color: #fff;
         }
 
-        .msr-button-primary:hover {
-          background: #4A1370;
+        .msr-button-purple:hover {
+          background: ${SCOUT.dark};
         }
 
         .msr-button-gold {
           background: ${SCOUT.gold};
-          color: ${SCOUT.navy};
-        }
-
-        .msr-button-gold:hover {
-          filter: brightness(.96);
+          color: #251900;
         }
 
         .msr-button-secondary {
-          background: #F3F4F6;
-          color: ${SCOUT.text};
+          background: #f0f1f4;
+          color: #374151;
         }
 
         .msr-button-danger {
-          background: ${SCOUT.lightRed};
-          color: ${SCOUT.red};
+          background: #fee2e2;
+          color: #b91c1c;
         }
 
-        .msr-button-success {
-          background: ${SCOUT.lightGreen};
-          color: ${SCOUT.green};
-        }
-
-        .msr-sidebar-new-product {
+        .msr-table-wrapper {
           width: 100%;
-          margin-bottom: 18px;
-          height: 44px;
-          font-size: 13px;
-          font-weight: 800;
-        }
-
-        .msr-table-container {
-          background: white;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 13px;
-          overflow: hidden;
-        }
-
-        .msr-table-header {
-          padding: 19px 20px;
-          border-bottom: 1px solid ${SCOUT.border};
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .msr-table-title {
-          font-size: 16px;
-          font-weight: 800;
-          color: ${SCOUT.navy};
-        }
-
-        .msr-table-count {
-          color: ${SCOUT.muted};
-          font-size: 12px;
-        }
-
-        .msr-table-scroll {
           overflow-x: auto;
         }
 
         .msr-table {
           width: 100%;
-          border-collapse: collapse;
           min-width: 850px;
+          border-collapse: collapse;
         }
 
         .msr-table th {
-          text-align: left;
-          padding: 13px 18px;
-          background: #FAFAFA;
+          background: #fafafa;
           color: ${SCOUT.muted};
-          font-size: 11px;
+          font-size: 12px;
           text-transform: uppercase;
-          letter-spacing: .5px;
-          font-weight: 800;
+          letter-spacing: .03em;
+          padding: 13px 15px;
+          text-align: left;
           border-bottom: 1px solid ${SCOUT.border};
         }
 
         .msr-table td {
-          padding: 14px 18px;
-          border-bottom: 1px solid #F0F0F0;
-          font-size: 13px;
+          padding: 14px 15px;
+          border-bottom: 1px solid #edf0f4;
           vertical-align: middle;
+          font-size: 14px;
         }
 
-        .msr-table tbody tr:hover {
-          background: #FCFCFD;
+        .msr-table tr:hover td {
+          background: #fcfcfd;
         }
 
-        .msr-table tbody tr:last-child td {
-          border-bottom: none;
+        .msr-product-cell {
+          display: flex;
+          align-items: center;
+          gap: 11px;
         }
 
         .msr-product-image {
-          width: 54px;
-          height: 54px;
-          border-radius: 8px;
+          width: 48px;
+          height: 48px;
           object-fit: cover;
+          border-radius: 9px;
           border: 1px solid ${SCOUT.border};
-          background: #F3F4F6;
+          background: #f3f4f6;
+          flex-shrink: 0;
         }
 
-        .msr-product-placeholder {
-          width: 54px;
-          height: 54px;
-          border-radius: 8px;
-          background: ${SCOUT.lightPurple};
+        .msr-product-image-placeholder {
+          width: 48px;
+          height: 48px;
+          border-radius: 9px;
+          background: #f1eafa;
           color: ${SCOUT.purple};
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
+          font-size: 20px;
+          flex-shrink: 0;
         }
 
         .msr-product-name {
           font-weight: 800;
-          color: ${SCOUT.navy};
+          color: ${SCOUT.dark};
         }
 
         .msr-product-description {
-          max-width: 250px;
-          color: ${SCOUT.muted};
           margin-top: 3px;
-          font-size: 11px;
+          max-width: 300px;
+          color: ${SCOUT.muted};
+          font-size: 12px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
-        .msr-category {
-          display: inline-block;
-          background: ${SCOUT.lightPurple};
-          color: ${SCOUT.purple};
-          padding: 5px 9px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: capitalize;
-        }
-
-        .msr-price {
-          font-weight: 800;
-          color: ${SCOUT.navy};
-          white-space: nowrap;
-        }
-
-        .msr-stock-number {
-          font-weight: 800;
-        }
-
-        .msr-status {
+        .msr-badge {
           display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
           padding: 5px 9px;
-          border-radius: 20px;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 800;
-          white-space: nowrap;
         }
 
-        .msr-status-in {
-          background: ${SCOUT.lightGreen};
-          color: ${SCOUT.green};
+        .msr-badge-active {
+          background: #dcfce7;
+          color: #166534;
         }
 
-        .msr-status-low {
-          background: #FFF8E1;
-          color: #E65100;
+        .msr-badge-inactive {
+          background: #f3f4f6;
+          color: #4b5563;
         }
 
-        .msr-status-out {
-          background: ${SCOUT.lightRed};
-          color: ${SCOUT.red};
-        }
-
-        .msr-action-buttons {
+        .msr-actions {
           display: flex;
+          align-items: center;
           gap: 6px;
         }
 
         .msr-icon-button {
           width: 34px;
           height: 34px;
-          border: none;
-          border-radius: 7px;
+          border: 0;
+          border-radius: 8px;
           cursor: pointer;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
         }
 
         .msr-icon-edit {
-          background: ${SCOUT.lightBlue};
-          color: ${SCOUT.blue};
+          background: #ede9fe;
         }
 
         .msr-icon-delete {
-          background: ${SCOUT.lightRed};
-          color: ${SCOUT.red};
+          background: #fee2e2;
+        }
+
+        .msr-icon-view {
+          background: #e0f2fe;
         }
 
         .msr-empty {
@@ -1251,113 +933,65 @@ const MarketplaceAdmin = () => {
           color: ${SCOUT.muted};
         }
 
-        .msr-empty-icon {
-          font-size: 42px;
-          margin-bottom: 10px;
-        }
-
-        .msr-loading {
-          padding: 50px;
-          text-align: center;
-          color: ${SCOUT.muted};
-        }
-
-        .msr-error {
-          background: ${SCOUT.lightRed};
-          border: 1px solid #FFCDD2;
-          color: ${SCOUT.red};
+        .msr-alert {
+          margin-bottom: 16px;
           padding: 12px 15px;
-          border-radius: 8px;
-          margin-bottom: 15px;
-          font-size: 13px;
+          border-radius: 9px;
+          font-size: 14px;
+          font-weight: 600;
         }
 
-        .msr-message-row.unread {
-          background: #FFFDF0;
+        .msr-alert-success {
+          background: #dcfce7;
+          color: #166534;
         }
 
-        .msr-message-name {
-          font-weight: 800;
-          color: ${SCOUT.navy};
+        .msr-alert-error {
+          background: #fee2e2;
+          color: #991b1b;
         }
 
-        .msr-message-email {
-          color: ${SCOUT.muted};
-          font-size: 11px;
-          margin-top: 3px;
-        }
-
-        .msr-message-subject {
-          font-weight: 700;
-          color: ${SCOUT.text};
-        }
-
-        .msr-message-preview {
-          max-width: 330px;
-          color: ${SCOUT.muted};
-          font-size: 11px;
-          margin-top: 3px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .msr-message-status {
-          display: inline-block;
-          padding: 5px 9px;
-          border-radius: 20px;
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: capitalize;
-        }
-
-        .msr-message-new {
-          background: ${SCOUT.lightRed};
-          color: ${SCOUT.red};
-        }
-
-        .msr-message-read {
-          background: ${SCOUT.lightBlue};
-          color: ${SCOUT.blue};
-        }
-
-        .msr-message-replied {
-          background: ${SCOUT.lightGreen};
-          color: ${SCOUT.green};
-        }
-
-        .msr-message-archived {
-          background: #F3F4F6;
-          color: ${SCOUT.muted};
-        }
-
-        /* PRODUCT SIDE PANEL */
-
-        .msr-modal-overlay {
+        /*
+         * PRODUCT PANEL
+         *
+         * The panel is positioned relative to the Marketplace content,
+         * NOT over the common dashboard sidebar.
+         */
+        .msr-product-overlay {
           position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,.48);
-          z-index: 1000;
+          top: 0;
+          right: 0;
+          bottom: 0;
+
+          /*
+           * Leave the common dashboard sidebar visible.
+           * The sidebar normally occupies about 250px.
+           */
+          left: 250px;
+
+          background: rgba(0,0,0,.32);
+          z-index: 900;
+
           display: flex;
-          align-items: flex-start;
           justify-content: flex-start;
+          align-items: stretch;
         }
 
-        .msr-modal {
-          width: min(760px, 92vw);
-          height: 100vh;
-          max-height: 100vh;
+        .msr-product-panel {
+          width: min(760px, 100%);
+          height: 100%;
+          background: #fff;
           overflow-y: auto;
-          background: white;
-          border-radius: 0 16px 16px 0;
-          box-shadow: 15px 0 50px rgba(0,0,0,.28);
-          animation: msrSlideIn .25s ease;
+          box-shadow: 8px 0 30px rgba(0,0,0,.18);
+          animation: msrProductPanelIn .22s ease-out;
+          display: flex;
+          flex-direction: column;
         }
 
-        @keyframes msrSlideIn {
+        @keyframes msrProductPanelIn {
           from {
-            transform: translateX(-100%);
-            opacity: .5;
+            transform: translateX(-35px);
+            opacity: .7;
           }
 
           to {
@@ -1366,74 +1000,56 @@ const MarketplaceAdmin = () => {
           }
         }
 
-        .msr-modal.small {
-          width: min(600px, 92vw);
-          height: auto;
-          max-height: 92vh;
-          margin-top: 40px;
-          margin-left: 40px;
-          border-radius: 15px;
-          animation: msrModalFade .2s ease;
-        }
-
-        @keyframes msrModalFade {
-          from {
-            transform: scale(.96);
-            opacity: 0;
-          }
-
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        .msr-modal-header {
-          padding: 19px 22px;
-          border-bottom: 1px solid ${SCOUT.border};
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+        .msr-product-panel-header {
           position: sticky;
           top: 0;
-          background: white;
-          z-index: 2;
+          z-index: 5;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 15px;
+          padding: 18px 22px;
+          background: #fff;
+          border-bottom: 1px solid ${SCOUT.border};
         }
 
-        .msr-modal-title {
-          color: ${SCOUT.navy};
-          font-size: 18px;
+        .msr-panel-title {
+          margin: 0;
+          color: ${SCOUT.dark};
+          font-size: 20px;
           font-weight: 800;
         }
 
-        .msr-close {
-          width: 35px;
-          height: 35px;
-          border: none;
-          background: #F3F4F6;
-          border-radius: 50%;
+        .msr-panel-subtitle {
+          margin: 4px 0 0;
+          color: ${SCOUT.muted};
+          font-size: 12px;
+        }
+
+        .msr-close-button {
+          width: 36px;
+          height: 36px;
+          border: 0;
+          border-radius: 8px;
+          background: #f3f4f6;
+          color: #374151;
           cursor: pointer;
-          font-size: 18px;
-          color: ${SCOUT.text};
+          font-size: 19px;
         }
 
-        .msr-close:hover {
-          background: ${SCOUT.lightRed};
-          color: ${SCOUT.red};
-        }
-
-        .msr-modal-body {
+        .msr-product-panel-body {
           padding: 22px;
+          flex: 1;
         }
 
         .msr-form-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 17px;
+          gap: 15px;
         }
 
         .msr-form-group {
-          margin-bottom: 2px;
+          margin-bottom: 15px;
         }
 
         .msr-form-group.full {
@@ -1442,182 +1058,192 @@ const MarketplaceAdmin = () => {
 
         .msr-label {
           display: block;
-          font-size: 12px;
-          font-weight: 800;
-          color: ${SCOUT.navy};
           margin-bottom: 7px;
+          color: #374151;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .msr-required {
-          color: ${SCOUT.red};
-        }
-
-        .msr-input,
-        .msr-textarea,
-        .msr-form-select {
-          width: 100%;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 8px;
-          padding: 11px 12px;
-          outline: none;
-          font-size: 13px;
-          color: ${SCOUT.text};
-          background: white;
-        }
-
-        .msr-input:focus,
-        .msr-textarea:focus,
-        .msr-form-select:focus {
-          border-color: ${SCOUT.purple};
-          box-shadow: 0 0 0 3px rgba(106,27,154,.1);
+          color: #dc2626;
         }
 
         .msr-textarea {
-          min-height: 105px;
+          min-height: 110px;
           resize: vertical;
         }
 
-        .msr-upload {
-          border: 2px dashed ${SCOUT.border};
-          border-radius: 10px;
+        .msr-image-upload {
+          border: 2px dashed #d7dbe3;
+          border-radius: 12px;
           padding: 18px;
           text-align: center;
-          cursor: pointer;
-          transition: .2s ease;
-          display: block;
-        }
-
-        .msr-upload:hover {
-          border-color: ${SCOUT.purple};
-          background: ${SCOUT.lightPurple};
-        }
-
-        .msr-upload input {
-          display: none;
-        }
-
-        .msr-upload-icon {
-          font-size: 30px;
-          margin-bottom: 5px;
-        }
-
-        .msr-upload-text {
-          font-size: 12px;
-          font-weight: 700;
-          color: ${SCOUT.navy};
-        }
-
-        .msr-upload-help {
-          font-size: 10px;
-          color: ${SCOUT.muted};
-          margin-top: 3px;
+          background: #fafafa;
         }
 
         .msr-image-preview {
-          margin-top: 12px;
-          display: flex;
-          justify-content: center;
-        }
-
-        .msr-image-preview img {
-          width: 130px;
-          height: 130px;
+          width: 150px;
+          height: 150px;
           object-fit: cover;
           border-radius: 10px;
+          margin: 0 auto 12px;
+          display: block;
           border: 1px solid ${SCOUT.border};
         }
 
-        .msr-specifications {
-          border: 1px solid ${SCOUT.border};
-          border-radius: 10px;
-          padding: 15px;
+        .msr-file-input {
+          width: 100%;
         }
 
-        .msr-specifications-title {
-          font-size: 12px;
-          font-weight: 800;
-          color: ${SCOUT.navy};
-          margin-bottom: 12px;
-        }
-
-        .msr-spec-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+        .msr-product-panel-footer {
+          position: sticky;
+          bottom: 0;
+          z-index: 5;
+          padding: 16px 22px;
+          border-top: 1px solid ${SCOUT.border};
+          background: #fff;
+          display: flex;
+          justify-content: flex-end;
           gap: 10px;
         }
 
-        .msr-modal-footer {
-          padding: 17px 22px;
-          border-top: 1px solid ${SCOUT.border};
-          display: flex;
-          justify-content: flex-end;
-          gap: 9px;
-          position: sticky;
-          bottom: 0;
-          background: white;
-          z-index: 2;
+        .msr-message-list {
+          padding: 0;
         }
 
-        .msr-message-detail {
-          padding: 22px;
-        }
-
-        .msr-message-detail-header {
+        .msr-message-row {
           display: flex;
-          align-items: flex-start;
           justify-content: space-between;
+          align-items: center;
           gap: 15px;
-          padding-bottom: 18px;
-          border-bottom: 1px solid ${SCOUT.border};
+          padding: 16px 18px;
+          border-bottom: 1px solid #edf0f4;
         }
 
-        .msr-message-detail-name {
-          font-size: 18px;
+        .msr-message-row:hover {
+          background: #fafafa;
+        }
+
+        .msr-message-main {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .msr-message-name {
           font-weight: 800;
-          color: ${SCOUT.navy};
+          color: ${SCOUT.dark};
         }
 
-        .msr-message-detail-email {
-          margin-top: 4px;
-          color: ${SCOUT.blue};
-          font-size: 13px;
+        .msr-message-email {
+          margin-top: 3px;
+          color: ${SCOUT.muted};
+          font-size: 12px;
         }
 
-        .msr-message-detail-date {
+        .msr-message-preview {
+          margin-top: 6px;
+          color: #4b5563;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .msr-message-actions {
+          display: flex;
+          gap: 7px;
+          flex-shrink: 0;
+        }
+
+        .msr-message-modal-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1200;
+          background: rgba(0,0,0,.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .msr-message-modal {
+          width: min(650px, 100%);
+          max-height: 90vh;
+          overflow-y: auto;
+          background: #fff;
+          border-radius: 15px;
+          box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        }
+
+        .msr-message-modal-header {
+          padding: 18px 20px;
+          border-bottom: 1px solid ${SCOUT.border};
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .msr-message-modal-body {
+          padding: 20px;
+        }
+
+        .msr-message-field {
+          margin-bottom: 16px;
+        }
+
+        .msr-message-field-label {
           color: ${SCOUT.muted};
           font-size: 11px;
-          text-align: right;
-        }
-
-        .msr-message-detail-subject {
-          margin-top: 22px;
-          font-size: 16px;
+          text-transform: uppercase;
           font-weight: 800;
-          color: ${SCOUT.navy};
+          margin-bottom: 5px;
         }
 
-        .msr-message-detail-body {
-          margin-top: 13px;
-          background: #FAFAFA;
-          border: 1px solid ${SCOUT.border};
-          border-radius: 10px;
-          padding: 18px;
-          line-height: 1.7;
-          font-size: 14px;
-          white-space: pre-wrap;
+        .msr-message-field-value {
+          color: ${SCOUT.text};
+          line-height: 1.6;
+          word-break: break-word;
+        }
+
+        .msr-loading {
+          padding: 35px;
+          text-align: center;
+          color: ${SCOUT.muted};
         }
 
         @media (max-width: 900px) {
-          .msr-admin-sidebar {
-            width: 210px;
-          }
-
-          .msr-stat-grid {
+          .msr-stats {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .msr-admin-content {
-            padding: 20px;
+          .msr-product-overlay {
+            left: 0;
+          }
+
+          .msr-product-panel {
+            width: min(700px, 94vw);
+          }
+        }
+
+        @media (max-width: 650px) {
+          .msr-marketplace-inner {
+            padding: 14px;
+          }
+
+          .msr-page-header {
+            flex-direction: column;
+          }
+
+          .msr-stats {
+            grid-template-columns: 1fr;
+          }
+
+          .msr-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .msr-toolbar-left {
+            flex-direction: column;
           }
 
           .msr-form-grid {
@@ -1628,1134 +1254,893 @@ const MarketplaceAdmin = () => {
             grid-column: auto;
           }
 
-          .msr-spec-grid {
-            grid-template-columns: 1fr;
+          .msr-product-overlay {
+            left: 0;
           }
 
-          .msr-modal {
-            width: min(700px, 94vw);
-          }
-        }
-
-        @media (max-width: 680px) {
-          .msr-admin {
-            display: block;
-          }
-
-          .msr-admin-sidebar {
-            width: 100%;
-            min-height: auto;
-            position: relative;
-          }
-
-          .msr-admin-brand {
-            height: 65px;
-          }
-
-          .msr-admin-nav {
-            display: flex;
-            flex-wrap: wrap;
-            padding: 10px;
-            gap: 8px;
-          }
-
-          .msr-admin-nav-label {
-            display: none;
-          }
-
-          .msr-sidebar-new-product {
-            width: 100%;
-            margin-bottom: 2px;
-          }
-
-          .msr-admin-nav-button {
-            margin: 0;
-            justify-content: center;
-            padding: 11px;
-            flex: 1;
-          }
-
-          .msr-admin-nav-button span:not(.msr-admin-nav-icon):not(.msr-message-count) {
-            display: none;
-          }
-
-          .msr-message-count {
-            position: absolute;
-            margin-left: 27px;
-            margin-top: -25px;
-          }
-
-          .msr-admin-header {
-            padding: 0 17px;
-            height: 65px;
-          }
-
-          .msr-admin-header-title {
-            font-size: 17px;
-          }
-
-          .msr-admin-user {
-            font-size: 12px;
-          }
-
-          .msr-admin-content {
-            padding: 15px;
-          }
-
-          .msr-stat-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .msr-toolbar {
-            align-items: stretch;
-          }
-
-          .msr-search {
-            min-width: 100%;
-          }
-
-          .msr-select,
-          .msr-toolbar .msr-button {
+          .msr-product-panel {
             width: 100%;
           }
 
-          .msr-modal-overlay {
+          .msr-product-panel-body {
+            padding: 16px;
+          }
+
+          .msr-product-panel-footer {
+            padding: 14px 16px;
+          }
+
+          .msr-message-row {
             align-items: flex-start;
-          }
-
-          .msr-modal {
-            width: 94vw;
-            max-width: 94vw;
-            height: 100vh;
-            max-height: 100vh;
-            border-radius: 0 14px 14px 0;
-          }
-
-          .msr-modal.small {
-            width: 94vw;
-            max-width: 94vw;
-            height: auto;
-            max-height: 94vh;
-            margin: 10px;
-            border-radius: 14px;
-          }
-
-          .msr-modal-footer {
-            flex-direction: column-reverse;
-          }
-
-          .msr-modal-footer .msr-button {
-            width: 100%;
-          }
-
-          .msr-message-detail-header {
             flex-direction: column;
-          }
-
-          .msr-message-detail-date {
-            text-align: left;
           }
         }
       `}</style>
 
-      <div className="msr-admin">
-        <aside className="msr-admin-sidebar">
-          <div className="msr-admin-brand">
-            <div className="msr-admin-brand-icon">
-              MSR
+      <div className="msr-marketplace">
+        <div className="msr-marketplace-inner">
+
+          <div className="msr-page-header">
+            <div>
+              <h1 className="msr-page-title">
+                Marketplace Management
+              </h1>
+
+              <p className="msr-page-subtitle">
+                Manage marketplace products and customer messages.
+              </p>
+            </div>
+          </div>
+
+          {success && (
+            <div className="msr-alert msr-alert-success">
+              {success}
+            </div>
+          )}
+
+          {error && (
+            <div className="msr-alert msr-alert-error">
+              {error}
+            </div>
+          )}
+
+          <div className="msr-stats">
+            <div className="msr-stat-card">
+              <div className="msr-stat-label">
+                Total Products
+              </div>
+              <div className="msr-stat-value">
+                {stats.products}
+              </div>
             </div>
 
-            <div className="msr-admin-brand-text">
-              <div className="msr-admin-brand-title">
-                Marketplace
+            <div className="msr-stat-card">
+              <div className="msr-stat-label">
+                Active Products
               </div>
+              <div className="msr-stat-value">
+                {stats.activeProducts}
+              </div>
+            </div>
 
-              <div className="msr-admin-brand-subtitle">
-                Administration
+            <div className="msr-stat-card">
+              <div className="msr-stat-label">
+                Messages
+              </div>
+              <div className="msr-stat-value">
+                {stats.messages}
+              </div>
+            </div>
+
+            <div className="msr-stat-card">
+              <div className="msr-stat-label">
+                Unread Messages
+              </div>
+              <div className="msr-stat-value">
+                {stats.unreadMessages}
               </div>
             </div>
           </div>
 
-          <nav className="msr-admin-nav">
-            <div className="msr-admin-nav-label">
-              Management
-            </div>
+          <div className="msr-management">
 
-            {activeSection === 'products' && (
+            <div className="msr-management-tabs">
               <button
                 type="button"
-                className="msr-button msr-button-gold msr-sidebar-new-product"
-                onClick={openAddProduct}
+                className={`msr-tab ${
+                  activeSection === 'products'
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() =>
+                  setActiveSection('products')
+                }
               >
-                ＋ New Product
+                Products
               </button>
-            )}
 
-            <button
-              type="button"
-              className={`msr-admin-nav-button ${
-                activeSection === 'products'
-                  ? 'active'
-                  : ''
-              }`}
-              onClick={() =>
-                setActiveSection('products')
-              }
-            >
-              <span className="msr-admin-nav-icon">
-                🛍️
-              </span>
-
-              <span>Products</span>
-            </button>
-
-            <button
-              type="button"
-              className={`msr-admin-nav-button ${
-                activeSection === 'messages'
-                  ? 'active'
-                  : ''
-              }`}
-              onClick={() =>
-                setActiveSection('messages')
-              }
-            >
-              <span className="msr-admin-nav-icon">
-                💬
-              </span>
-
-              <span>Messages</span>
-
-              {unreadMessages > 0 && (
-                <span className="msr-message-count">
-                  {unreadMessages}
-                </span>
-              )}
-            </button>
-          </nav>
-        </aside>
-
-        <main className="msr-admin-main">
-          <header className="msr-admin-header">
-            <div>
-              <div className="msr-admin-header-title">
-                {activeSection === 'products'
-                  ? 'Marketplace Administration'
-                  : 'Public Messages'}
-              </div>
-
-              <div className="msr-admin-header-subtitle">
-                {activeSection === 'products'
-                  ? 'Manage scout products and marketplace inventory'
-                  : 'Receive and manage messages from the public website'}
-              </div>
+              <button
+                type="button"
+                className={`msr-tab ${
+                  activeSection === 'messages'
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() =>
+                  setActiveSection('messages')
+                }
+              >
+                Messages
+                {stats.unreadMessages > 0 && (
+                  <span
+                    style={{
+                      marginLeft: 7,
+                      background: SCOUT.gold,
+                      color: '#000',
+                      borderRadius: 999,
+                      padding: '2px 7px',
+                      fontSize: 10,
+                    }}
+                  >
+                    {stats.unreadMessages}
+                  </span>
+                )}
+              </button>
             </div>
 
-            <div className="msr-admin-user">
-              <div className="msr-admin-user-avatar">
-                A
-              </div>
-
-              <span>Admin</span>
-            </div>
-          </header>
-
-          <div className="msr-admin-content">
             {activeSection === 'products' && (
               <>
-                <div className="msr-stat-grid">
-                  <div className="msr-stat-card">
-                    <div className="msr-stat-icon products">
+                <div className="msr-toolbar">
+                  <div className="msr-toolbar-left">
+                    <input
+                      type="search"
+                      className="msr-input"
+                      placeholder="Search products..."
+                      value={search}
+                      onChange={(event) =>
+                        setSearch(event.target.value)
+                      }
+                    />
+
+                    <select
+                      className="msr-select"
+                      value={categoryFilter}
+                      onChange={(event) =>
+                        setCategoryFilter(
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="">
+                        All Categories
+                      </option>
+
+                      {categories.map((category, index) => {
+                        const value =
+                          typeof category === 'string'
+                            ? category
+                            : category.name ||
+                              category.category ||
+                              category.title ||
+                              '';
+
+                        return (
+                          <option
+                            key={
+                              category.id ||
+                              `${value}-${index}`
+                            }
+                            value={value}
+                          >
+                            {value}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {loadingProducts ? (
+                  <div className="msr-loading">
+                    Loading products...
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="msr-empty">
+                    <div
+                      style={{
+                        fontSize: 35,
+                        marginBottom: 10,
+                      }}
+                    >
                       🛍️
                     </div>
 
-                    <div>
-                      <div className="msr-stat-label">
-                        Total Products
-                      </div>
+                    <strong>
+                      No products found
+                    </strong>
 
-                      <div className="msr-stat-number">
-                        {products.length}
-                      </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 13,
+                      }}
+                    >
+                      Use the New Product button in the
+                      dashboard sidebar to add a product.
                     </div>
                   </div>
+                ) : (
+                  <div className="msr-table-wrapper">
+                    <table className="msr-table">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Category</th>
+                          <th>Price</th>
+                          <th>Stock</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
 
-                  <div className="msr-stat-card">
-                    <div className="msr-stat-icon low">
-                      ⚠️
-                    </div>
+                      <tbody>
+                        {filteredProducts.map(
+                          (product) => {
+                            const image =
+                              getProductImage(product);
 
-                    <div>
-                      <div className="msr-stat-label">
-                        Low Stock
-                      </div>
+                            const status =
+                              product.status ||
+                              (product.is_active === false
+                                ? 'inactive'
+                                : 'active');
 
-                      <div className="msr-stat-number">
-                        {
-                          products.filter(
-                            (p) =>
-                              Number(p.stock || 0) > 0 &&
-                              Number(p.stock || 0) < 5
-                          ).length
-                        }
-                      </div>
-                    </div>
-                  </div>
+                            return (
+                              <tr
+                                key={product.id}
+                              >
+                                <td>
+                                  <div className="msr-product-cell">
+                                    {image ? (
+                                      <img
+                                        src={image}
+                                        alt={
+                                          product.name ||
+                                          'Product'
+                                        }
+                                        className="msr-product-image"
+                                      />
+                                    ) : (
+                                      <div className="msr-product-image-placeholder">
+                                        🛍️
+                                      </div>
+                                    )}
 
-                  <div className="msr-stat-card">
-                    <div className="msr-stat-icon messages">
-                      💬
-                    </div>
+                                    <div>
+                                      <div className="msr-product-name">
+                                        {product.name ||
+                                          'Unnamed Product'}
+                                      </div>
 
-                    <div>
-                      <div className="msr-stat-label">
-                        New Messages
-                      </div>
-
-                      <div className="msr-stat-number">
-                        {unreadMessages}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {productError && (
-                  <div className="msr-error">
-                    {productError}
-                  </div>
-                )}
-
-                <div className="msr-toolbar">
-                  <div className="msr-search">
-                    <span className="msr-search-icon">
-                      🔎
-                    </span>
-
-                    <input
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchProduct}
-                      onChange={(e) =>
-                        setSearchProduct(
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-
-                  <select
-                    className="msr-select"
-                    value={categoryFilter}
-                    onChange={(e) =>
-                      setCategoryFilter(
-                        e.target.value
-                      )
-                    }
-                  >
-                    <option value="all">
-                      All Categories
-                    </option>
-
-                    {categories.map((category) => (
-                      <option
-                        key={category}
-                        value={category}
-                      >
-                        {category.charAt(0).toUpperCase() +
-                          category.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="msr-table-container">
-                  <div className="msr-table-header">
-                    <div className="msr-table-title">
-                      Products
-                    </div>
-
-                    <div className="msr-table-count">
-                      {filteredProducts.length} product
-                      {filteredProducts.length !== 1
-                        ? 's'
-                        : ''}
-                    </div>
-                  </div>
-
-                  {loadingProducts ? (
-                    <div className="msr-loading">
-                      Loading products...
-                    </div>
-                  ) : filteredProducts.length === 0 ? (
-                    <div className="msr-empty">
-                      <div className="msr-empty-icon">
-                        🛍️
-                      </div>
-
-                      <strong>
-                        No products found
-                      </strong>
-
-                      <div>
-                        Add your first marketplace
-                        product.
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="msr-table-scroll">
-                      <table className="msr-table">
-                        <thead>
-                          <tr>
-                            <th>Product</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Stock</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {filteredProducts.map(
-                            (product) => {
-                              const stockStatus =
-                                getStockStatus(
-                                  product.stock
-                                );
-
-                              const productImageUrl =
-                                getMediaUrl(
-                                  product.image_url
-                                );
-
-                              return (
-                                <tr
-                                  key={product.id}
-                                >
-                                  <td>
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        alignItems:
-                                          'center',
-                                        gap: '11px',
-                                      }}
-                                    >
-                                      {productImageUrl ? (
-                                        <img
-                                          src={
-                                            productImageUrl
-                                          }
-                                          alt={
-                                            product.name
-                                          }
-                                          className="msr-product-image"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display =
-                                              'none';
-                                          }}
-                                        />
-                                      ) : (
-                                        <div className="msr-product-placeholder">
-                                          📦
-                                        </div>
-                                      )}
-
-                                      <div>
-                                        <div className="msr-product-name">
-                                          {
-                                            product.name
-                                          }
-                                        </div>
-
-                                        <div className="msr-product-description">
-                                          {product.description ||
-                                            'No description'}
-                                        </div>
+                                      <div className="msr-product-description">
+                                        {product.description ||
+                                          'No description'}
                                       </div>
                                     </div>
-                                  </td>
+                                  </div>
+                                </td>
 
-                                  <td>
-                                    <span className="msr-category">
-                                      {product.category ||
-                                        'Uncategorized'}
-                                    </span>
-                                  </td>
+                                <td>
+                                  {product.category ||
+                                    product.category_name ||
+                                    '—'}
+                                </td>
 
-                                  <td>
-                                    <span className="msr-price">
-                                      RWF{' '}
-                                      {formatPrice(
-                                        product.price
-                                      )}
-                                    </span>
-                                  </td>
+                                <td>
+                                  <strong>
+                                    RWF{' '}
+                                    {formatPrice(
+                                      product.price
+                                    )}
+                                  </strong>
+                                </td>
 
-                                  <td>
-                                    <span className="msr-stock-number">
-                                      {product.stock ?? 0}
-                                    </span>
-                                  </td>
+                                <td>
+                                  {product.stock ??
+                                    product.quantity ??
+                                    0}
+                                </td>
 
-                                  <td>
-                                    <span
-                                      className={`msr-status ${stockStatus.className}`}
-                                    >
-                                      {
-                                        stockStatus.label
+                                <td>
+                                  <span
+                                    className={`msr-badge ${
+                                      status ===
+                                        'active' ||
+                                      status === 'published'
+                                        ? 'msr-badge-active'
+                                        : 'msr-badge-inactive'
+                                    }`}
+                                  >
+                                    {status}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <div className="msr-actions">
+                                    <button
+                                      type="button"
+                                      title="Edit product"
+                                      className="msr-icon-button msr-icon-edit"
+                                      onClick={() =>
+                                        openEditProduct(
+                                          product
+                                        )
                                       }
-                                    </span>
-                                  </td>
+                                    >
+                                      ✏️
+                                    </button>
 
-                                  <td>
-                                    <div className="msr-action-buttons">
-                                      <button
-                                        type="button"
-                                        title="Edit product"
-                                        className="msr-icon-button msr-icon-edit"
-                                        onClick={() =>
-                                          openEditProduct(
-                                            product
-                                          )
-                                        }
-                                      >
-                                        ✏️
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        title="Delete product"
-                                        className="msr-icon-button msr-icon-delete"
-                                        onClick={() =>
-                                          deleteProduct(
-                                            product
-                                          )
-                                        }
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            }
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                                    <button
+                                      type="button"
+                                      title="Delete product"
+                                      className="msr-icon-button msr-icon-delete"
+                                      onClick={() =>
+                                        deleteProduct(
+                                          product
+                                        )
+                                      }
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             )}
 
             {activeSection === 'messages' && (
               <>
-                <div className="msr-toolbar">
-                  <div className="msr-search">
-                    <span className="msr-search-icon">
-                      🔎
-                    </span>
-
-                    <input
-                      type="text"
-                      placeholder="Search messages..."
-                      value={searchMessage}
-                      onChange={(e) =>
-                        setSearchMessage(
-                          e.target.value
-                        )
-                      }
-                    />
+                {loadingMessages ? (
+                  <div className="msr-loading">
+                    Loading messages...
                   </div>
+                ) : messages.length === 0 ? (
+                  <div className="msr-empty">
+                    <div
+                      style={{
+                        fontSize: 35,
+                        marginBottom: 10,
+                      }}
+                    >
+                      💬
+                    </div>
 
-                  <select
-                    className="msr-select"
-                    value={messageFilter}
-                    onChange={(e) =>
-                      setMessageFilter(
-                        e.target.value
-                      )
-                    }
-                  >
-                    <option value="all">
-                      All Messages
-                    </option>
-                    <option value="new">New</option>
-                    <option value="read">Read</option>
-                    <option value="replied">
-                      Replied
-                    </option>
-                    <option value="archived">
-                      Archived
-                    </option>
-                  </select>
+                    <strong>
+                      No messages found
+                    </strong>
+                  </div>
+                ) : (
+                  <div className="msr-message-list">
+                    {messages.map((message) => (
+                      <div
+                        className="msr-message-row"
+                        key={message.id}
+                      >
+                        <div className="msr-message-main">
+                          <div className="msr-message-name">
+                            {message.name ||
+                              message.full_name ||
+                              message.sender_name ||
+                              'Unknown sender'}
+                          </div>
 
-                  <button
-                    type="button"
-                    className="msr-button msr-button-secondary"
-                    onClick={loadMessages}
-                  >
-                    ↻ Refresh
-                  </button>
-                </div>
+                          <div className="msr-message-email">
+                            {message.email ||
+                              message.sender_email ||
+                              ''}
+                          </div>
 
-                {messageError && (
-                  <div className="msr-error">
-                    {messageError}
+                          <div className="msr-message-preview">
+                            {message.message ||
+                              message.content ||
+                              message.subject ||
+                              'No message'}
+                          </div>
+                        </div>
+
+                        <div className="msr-message-actions">
+                          <button
+                            type="button"
+                            className="msr-icon-button msr-icon-view"
+                            title="View message"
+                            onClick={() =>
+                              viewMessage(message)
+                            }
+                          >
+                            👁️
+                          </button>
+
+                          <button
+                            type="button"
+                            className="msr-icon-button msr-icon-delete"
+                            title="Delete message"
+                            onClick={() =>
+                              deleteMessage(message)
+                            }
+                            disabled={deletingMessage}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-
-                <div className="msr-table-container">
-                  <div className="msr-table-header">
-                    <div className="msr-table-title">
-                      Messages From Public
-                    </div>
-
-                    <div className="msr-table-count">
-                      {filteredMessages.length} message
-                      {filteredMessages.length !== 1
-                        ? 's'
-                        : ''}
-                    </div>
-                  </div>
-
-                  {loadingMessages ? (
-                    <div className="msr-loading">
-                      Loading messages...
-                    </div>
-                  ) : filteredMessages.length === 0 ? (
-                    <div className="msr-empty">
-                      <div className="msr-empty-icon">
-                        💬
-                      </div>
-
-                      <strong>
-                        No messages found
-                      </strong>
-
-                      <div>
-                        Messages submitted through
-                        the public Contact page will
-                        appear here.
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="msr-table-scroll">
-                      <table className="msr-table">
-                        <thead>
-                          <tr>
-                            <th>Sender</th>
-                            <th>Subject</th>
-                            <th>Message</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {filteredMessages.map(
-                            (message) => {
-                              const status =
-                                String(
-                                  message.status ||
-                                    'new'
-                                ).toLowerCase();
-
-                              const isUnread =
-                                status === 'new' ||
-                                status === 'unread';
-
-                              return (
-                                <tr
-                                  key={message.id}
-                                  className={
-                                    isUnread
-                                      ? 'msr-message-row unread'
-                                      : 'msr-message-row'
-                                  }
-                                >
-                                  <td>
-                                    <div className="msr-message-name">
-                                      {message.name ||
-                                        message.full_name ||
-                                        'Public User'}
-                                    </div>
-
-                                    <div className="msr-message-email">
-                                      {message.email ||
-                                        'No email'}
-                                    </div>
-                                  </td>
-
-                                  <td>
-                                    <div className="msr-message-subject">
-                                      {message.subject ||
-                                        'No subject'}
-                                    </div>
-                                  </td>
-
-                                  <td>
-                                    <div className="msr-message-preview">
-                                      {message.message ||
-                                        'No message content'}
-                                    </div>
-                                  </td>
-
-                                  <td>
-                                    {formatDate(
-                                      message.created_at ||
-                                        message.createdAt ||
-                                        message.date
-                                    )}
-                                  </td>
-
-                                  <td>
-                                    <span
-                                      className={`msr-message-status ${messageStatusClass(
-                                        status
-                                      )}`}
-                                    >
-                                      {status}
-                                    </span>
-                                  </td>
-
-                                  <td>
-                                    <div className="msr-action-buttons">
-                                      <button
-                                        type="button"
-                                        className="msr-icon-button msr-icon-edit"
-                                        title="View message"
-                                        onClick={() =>
-                                          viewMessage(
-                                            message
-                                          )
-                                        }
-                                      >
-                                        👁️
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        className="msr-icon-button msr-icon-delete"
-                                        title="Delete message"
-                                        onClick={() =>
-                                          deleteMessage(
-                                            message
-                                          )
-                                        }
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            }
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </div>
-        </main>
-      </div>
+        </div>
 
-      {showProductModal && (
-        <div
-          className="msr-modal-overlay"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) {
-              closeProductModal();
-            }
-          }}
-        >
-          <div className="msr-modal">
-            <div className="msr-modal-header">
-              <div className="msr-modal-title">
-                {editingProduct
-                  ? 'Edit Product'
-                  : 'Add New Product'}
+        {/* =====================================================
+            ADD / EDIT PRODUCT PANEL
+            =====================================================
+
+            IMPORTANT:
+            This panel starts AFTER the common dashboard sidebar
+            on desktop. Therefore the common Sidebar.jsx remains
+            visible and does not move to the top.
+        */}
+        {showProductModal && (
+          <div
+            className="msr-product-overlay"
+            onMouseDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                !savingProduct
+              ) {
+                closeProductPanel();
+              }
+            }}
+          >
+            <div className="msr-product-panel">
+              <div className="msr-product-panel-header">
+                <div>
+                  <h2 className="msr-panel-title">
+                    {editingProduct
+                      ? 'Edit Product'
+                      : 'Add New Product'}
+                  </h2>
+
+                  <p className="msr-panel-subtitle">
+                    {editingProduct
+                      ? 'Update the marketplace product information.'
+                      : 'Add a new product to the marketplace.'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="msr-close-button"
+                  onClick={closeProductPanel}
+                  disabled={savingProduct}
+                >
+                  ×
+                </button>
               </div>
 
-              <button
-                type="button"
-                className="msr-close"
-                onClick={closeProductModal}
+              <form
+                onSubmit={saveProduct}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: '100%',
+                }}
               >
-                ×
-              </button>
-            </div>
+                <div className="msr-product-panel-body">
+                  <div className="msr-form-grid">
 
-            <form onSubmit={saveProduct}>
-              <div className="msr-modal-body">
-                <div className="msr-form-grid">
-                  <div className="msr-form-group full">
-                    <label className="msr-label">
-                      Product Name{' '}
-                      <span className="msr-required">
-                        *
-                      </span>
-                    </label>
+                    <div className="msr-form-group full">
+                      <label className="msr-label">
+                        Product Name{' '}
+                        <span className="msr-required">
+                          *
+                        </span>
+                      </label>
 
-                    <input
-                      className="msr-input"
-                      type="text"
-                      name="name"
-                      value={productForm.name}
-                      onChange={handleProductChange}
-                      placeholder="e.g. Scout Uniform"
-                      required
-                    />
-                  </div>
-
-                  <div className="msr-form-group">
-                    <label className="msr-label">
-                      Category
-                    </label>
-
-                    <select
-                      className="msr-form-select"
-                      name="category"
-                      value={productForm.category}
-                      onChange={handleProductChange}
-                    >
-                      {categories.map(
-                        (category) => (
-                          <option
-                            key={category}
-                            value={category}
-                          >
-                            {category
-                              .charAt(0)
-                              .toUpperCase() +
-                              category.slice(1)}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </div>
-
-                  <div className="msr-form-group">
-                    <label className="msr-label">
-                      Price (RWF){' '}
-                      <span className="msr-required">
-                        *
-                      </span>
-                    </label>
-
-                    <input
-                      className="msr-input"
-                      type="number"
-                      min="0"
-                      name="price"
-                      value={productForm.price}
-                      onChange={handleProductChange}
-                      placeholder="15000"
-                      required
-                    />
-                  </div>
-
-                  <div className="msr-form-group">
-                    <label className="msr-label">
-                      Stock Quantity{' '}
-                      <span className="msr-required">
-                        *
-                      </span>
-                    </label>
-
-                    <input
-                      className="msr-input"
-                      type="number"
-                      min="0"
-                      name="stock"
-                      value={productForm.stock}
-                      onChange={handleProductChange}
-                      placeholder="25"
-                      required
-                    />
-                  </div>
-
-                  <div className="msr-form-group full">
-                    <label className="msr-label">
-                      Description
-                    </label>
-
-                    <textarea
-                      className="msr-textarea"
-                      name="description"
-                      value={productForm.description}
-                      onChange={handleProductChange}
-                      placeholder="Describe the product..."
-                    />
-                  </div>
-
-                  <div className="msr-form-group full">
-                    <label className="msr-label">
-                      Product Image
-                    </label>
-
-                    <label className="msr-upload">
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
+                        type="text"
+                        name="name"
+                        className="msr-input"
+                        value={productForm.name}
+                        onChange={handleProductChange}
+                        placeholder="Enter product name"
+                        required
+                      />
+                    </div>
+
+                    <div className="msr-form-group full">
+                      <label className="msr-label">
+                        Description
+                      </label>
+
+                      <textarea
+                        name="description"
+                        className="msr-textarea"
+                        value={productForm.description}
+                        onChange={handleProductChange}
+                        placeholder="Describe the product..."
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Price (RWF){' '}
+                        <span className="msr-required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="number"
+                        name="price"
+                        className="msr-input"
+                        value={productForm.price}
+                        onChange={handleProductChange}
+                        placeholder="0"
+                        min="0"
+                        required
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Stock
+                      </label>
+
+                      <input
+                        type="number"
+                        name="stock"
+                        className="msr-input"
+                        value={productForm.stock}
+                        onChange={handleProductChange}
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Category
+                      </label>
+
+                      <input
+                        type="text"
+                        name="category"
+                        className="msr-input"
+                        value={productForm.category}
+                        onChange={handleProductChange}
+                        placeholder="e.g. Uniforms"
+                        list="marketplace-categories"
                       />
 
-                      <div className="msr-upload-icon">
-                        🖼️
-                      </div>
+                      <datalist id="marketplace-categories">
+                        {categories.map(
+                          (category, index) => {
+                            const value =
+                              typeof category === 'string'
+                                ? category
+                                : category.name ||
+                                  category.category ||
+                                  category.title ||
+                                  '';
 
-                      <div className="msr-upload-text">
-                        Click to choose product image
-                      </div>
+                            return (
+                              <option
+                                key={`${value}-${index}`}
+                                value={value}
+                              />
+                            );
+                          }
+                        )}
+                      </datalist>
+                    </div>
 
-                      <div className="msr-upload-help">
-                        JPG, PNG or WEBP
-                      </div>
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Status
+                      </label>
 
-                      {imagePreview && (
-                        <div className="msr-image-preview">
+                      <select
+                        name="status"
+                        className="msr-select"
+                        value={productForm.status}
+                        onChange={handleProductChange}
+                      >
+                        <option value="active">
+                          Active
+                        </option>
+
+                        <option value="inactive">
+                          Inactive
+                        </option>
+                      </select>
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Seller Name
+                      </label>
+
+                      <input
+                        type="text"
+                        name="seller_name"
+                        className="msr-input"
+                        value={productForm.seller_name}
+                        onChange={handleProductChange}
+                        placeholder="Seller name"
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Seller Phone
+                      </label>
+
+                      <input
+                        type="text"
+                        name="seller_phone"
+                        className="msr-input"
+                        value={productForm.seller_phone}
+                        onChange={handleProductChange}
+                        placeholder="Phone number"
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Seller Email
+                      </label>
+
+                      <input
+                        type="email"
+                        name="seller_email"
+                        className="msr-input"
+                        value={productForm.seller_email}
+                        onChange={handleProductChange}
+                        placeholder="seller@example.com"
+                      />
+                    </div>
+
+                    <div className="msr-form-group">
+                      <label className="msr-label">
+                        Location
+                      </label>
+
+                      <input
+                        type="text"
+                        name="location"
+                        className="msr-input"
+                        value={productForm.location}
+                        onChange={handleProductChange}
+                        placeholder="Location"
+                      />
+                    </div>
+
+                    <div className="msr-form-group full">
+                      <label className="msr-label">
+                        Product Image
+                      </label>
+
+                      <div className="msr-image-upload">
+                        {productImagePreview && (
                           <img
-                            src={imagePreview}
+                            src={productImagePreview}
                             alt="Product preview"
+                            className="msr-image-preview"
                           />
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                        )}
 
-                  <div className="msr-form-group full">
-                    <div className="msr-specifications">
-                      <div className="msr-specifications-title">
-                        Product Specifications
-                      </div>
+                        <input
+                          type="file"
+                          className="msr-file-input"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
 
-                      <div className="msr-spec-grid">
-                        <div>
-                          <label className="msr-label">
-                            Size
-                          </label>
-
-                          <input
-                            className="msr-input"
-                            type="text"
-                            name="Size"
-                            value={
-                              productForm
-                                .specifications
-                                .Size
-                            }
-                            onChange={
-                              handleSpecificationChange
-                            }
-                            placeholder="S, M, L, XL"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="msr-label">
-                            Color
-                          </label>
-
-                          <input
-                            className="msr-input"
-                            type="text"
-                            name="Color"
-                            value={
-                              productForm
-                                .specifications
-                                .Color
-                            }
-                            onChange={
-                              handleSpecificationChange
-                            }
-                            placeholder="Khaki"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="msr-label">
-                            Material
-                          </label>
-
-                          <input
-                            className="msr-input"
-                            type="text"
-                            name="Material"
-                            value={
-                              productForm
-                                .specifications
-                                .Material
-                            }
-                            onChange={
-                              handleSpecificationChange
-                            }
-                            placeholder="Cotton"
-                          />
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: SCOUT.muted,
+                            fontSize: 12,
+                          }}
+                        >
+                          Select a product image.
                         </div>
                       </div>
                     </div>
+
                   </div>
                 </div>
-              </div>
 
-              <div className="msr-modal-footer">
+                <div className="msr-product-panel-footer">
+                  <button
+                    type="button"
+                    className="msr-button msr-button-secondary"
+                    onClick={closeProductPanel}
+                    disabled={savingProduct}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="msr-button msr-button-purple"
+                    disabled={savingProduct}
+                  >
+                    {savingProduct
+                      ? 'Saving...'
+                      : editingProduct
+                      ? 'Update Product'
+                      : 'Save Product'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================
+            MESSAGE VIEW MODAL
+            ===================================================== */}
+        {selectedMessage && (
+          <div
+            className="msr-message-modal-overlay"
+            onMouseDown={(event) => {
+              if (
+                event.target === event.currentTarget
+              ) {
+                setSelectedMessage(null);
+              }
+            }}
+          >
+            <div className="msr-message-modal">
+              <div className="msr-message-modal-header">
+                <h2
+                  style={{
+                    margin: 0,
+                    color: SCOUT.dark,
+                    fontSize: 19,
+                  }}
+                >
+                  Message Details
+                </h2>
+
                 <button
                   type="button"
-                  className="msr-button msr-button-secondary"
-                  onClick={closeProductModal}
-                  disabled={savingProduct}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="msr-button msr-button-primary"
-                  disabled={savingProduct}
-                >
-                  {savingProduct
-                    ? 'Saving...'
-                    : editingProduct
-                    ? 'Save Changes'
-                    : 'Upload Product'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {selectedMessage && (
-        <div
-          className="msr-modal-overlay"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedMessage(null);
-            }
-          }}
-        >
-          <div className="msr-modal small">
-            <div className="msr-modal-header">
-              <div className="msr-modal-title">
-                Message Details
-              </div>
-
-              <button
-                type="button"
-                className="msr-close"
-                onClick={() =>
-                  setSelectedMessage(null)
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="msr-message-detail">
-              <div className="msr-message-detail-header">
-                <div>
-                  <div className="msr-message-detail-name">
-                    {selectedMessage.name ||
-                      selectedMessage.full_name ||
-                      'Public User'}
-                  </div>
-
-                  <div className="msr-message-detail-email">
-                    {selectedMessage.email ||
-                      'No email provided'}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    className={`msr-message-status ${messageStatusClass(
-                      selectedMessage.status
-                    )}`}
-                  >
-                    {selectedMessage.status ||
-                      'new'}
-                  </div>
-
-                  <div className="msr-message-detail-date">
-                    {formatDate(
-                      selectedMessage.created_at ||
-                        selectedMessage.createdAt ||
-                        selectedMessage.date
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="msr-message-detail-subject">
-                {selectedMessage.subject ||
-                  'No subject'}
-              </div>
-
-              <div className="msr-message-detail-body">
-                {selectedMessage.message ||
-                  'No message content.'}
-              </div>
-            </div>
-
-            <div className="msr-modal-footer">
-              <button
-                type="button"
-                className="msr-button msr-button-danger"
-                onClick={() =>
-                  deleteMessage(selectedMessage)
-                }
-                disabled={deletingMessage}
-              >
-                🗑️ Delete
-              </button>
-
-              {selectedMessage.email && (
-                <a
-                  href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(
-                    selectedMessage.subject ||
-                      'MSR Inquiry'
-                  )}`}
-                  className="msr-button msr-button-gold"
-                  style={{
-                    textDecoration: 'none',
-                  }}
+                  className="msr-close-button"
                   onClick={() =>
-                    markReplied(selectedMessage)
+                    setSelectedMessage(null)
                   }
                 >
-                  ✉️ Reply
-                </a>
-              )}
+                  ×
+                </button>
+              </div>
 
-              <button
-                type="button"
-                className="msr-button msr-button-success"
-                onClick={() =>
-                  markReplied(selectedMessage)
-                }
-              >
-                ✓ Mark Replied
-              </button>
+              <div className="msr-message-modal-body">
+                <div className="msr-message-field">
+                  <div className="msr-message-field-label">
+                    Name
+                  </div>
 
-              <button
-                type="button"
-                className="msr-button msr-button-secondary"
-                onClick={() =>
-                  setSelectedMessage(null)
-                }
-              >
-                Close
-              </button>
+                  <div className="msr-message-field-value">
+                    {selectedMessage.name ||
+                      selectedMessage.full_name ||
+                      selectedMessage.sender_name ||
+                      '—'}
+                  </div>
+                </div>
+
+                <div className="msr-message-field">
+                  <div className="msr-message-field-label">
+                    Email
+                  </div>
+
+                  <div className="msr-message-field-value">
+                    {selectedMessage.email ||
+                      selectedMessage.sender_email ||
+                      '—'}
+                  </div>
+                </div>
+
+                <div className="msr-message-field">
+                  <div className="msr-message-field-label">
+                    Phone
+                  </div>
+
+                  <div className="msr-message-field-value">
+                    {selectedMessage.phone ||
+                      selectedMessage.phone_number ||
+                      '—'}
+                  </div>
+                </div>
+
+                <div className="msr-message-field">
+                  <div className="msr-message-field-label">
+                    Subject
+                  </div>
+
+                  <div className="msr-message-field-value">
+                    {selectedMessage.subject ||
+                      '—'}
+                  </div>
+                </div>
+
+                <div className="msr-message-field">
+                  <div className="msr-message-field-label">
+                    Message
+                  </div>
+
+                  <div className="msr-message-field-value">
+                    {selectedMessage.message ||
+                      selectedMessage.content ||
+                      '—'}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 9,
+                    marginTop: 20,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="msr-button msr-button-secondary"
+                    onClick={() =>
+                      setSelectedMessage(null)
+                    }
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    type="button"
+                    className="msr-button msr-button-purple"
+                    onClick={() =>
+                      markMessageReplied(
+                        selectedMessage
+                      )
+                    }
+                  >
+                    Mark Replied
+                  </button>
+
+                  <button
+                    type="button"
+                    className="msr-button msr-button-danger"
+                    onClick={() =>
+                      deleteMessage(
+                        selectedMessage
+                      )
+                    }
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 };
