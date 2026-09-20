@@ -127,7 +127,7 @@ import ManageRegistrations from './components/national/ManageRegistrations';
 // ============================================================
 import MarketplaceAdmin from './components/national/MarketplaceAdmin';
 
-// ✅ ADD NEWS MANAGEMENT IMPORT
+// NEWS MANAGEMENT
 import NewsManagement from './components/national/NewsManagement';
 
 // ============================================================
@@ -556,6 +556,7 @@ const ProtectedRoutes = () => {
           }
         />
 
+
         {/* ==================================================
             NATIONAL - MARKETPLACE ADMIN
         ================================================== */}
@@ -570,6 +571,7 @@ const ProtectedRoutes = () => {
             )
           }
         />
+
 
         {/* ==================================================
             NATIONAL - NEWS MANAGEMENT
@@ -786,7 +788,26 @@ function App() {
             element={<News />}
           />
 
-          {/* Event details are public */}
+
+          {/* ==================================================
+              PUBLIC NEWS
+              READ MORE DOES NOT REQUIRE LOGIN
+          ================================================== */}
+
+          <Route
+            path="/news"
+            element={<News />}
+          />
+
+          <Route
+            path="/news/:id"
+            element={<News />}
+          />
+
+
+          {/* ==================================================
+              EVENT DETAILS ARE PUBLIC
+          ================================================== */}
 
           <Route
             path="/events/:id"
