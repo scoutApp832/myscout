@@ -1,4 +1,3 @@
-
 // src/components/national/MarketplaceAdmin.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
@@ -86,19 +85,6 @@ const DEFAULT_CATEGORIES = [
 /*
  * Convert product image paths returned by the backend into
  * browser-accessible URLs.
- *
- * Examples:
- *   /uploads/products/photo.jpg
- *      -> https://myscoutrwanda.onrender.com/uploads/products/photo.jpg
- *
- *   uploads/products/photo.jpg
- *      -> https://myscoutrwanda.onrender.com/uploads/products/photo.jpg
- *
- *   http://localhost:5000/uploads/products/photo.jpg
- *      -> https://myscoutrwanda.onrender.com/uploads/products/photo.jpg
- *
- *   https://myscoutrwanda.onrender.com/uploads/products/photo.jpg
- *      -> unchanged
  */
 const getMediaUrl = (url) => {
   if (!url) return '';
@@ -107,7 +93,6 @@ const getMediaUrl = (url) => {
 
   if (!value) return '';
 
-  // Data/blob URLs are already browser-ready.
   if (
     value.startsWith('data:') ||
     value.startsWith('blob:')
@@ -115,21 +100,22 @@ const getMediaUrl = (url) => {
     return value;
   }
 
-  // Convert old localhost backend URLs to the deployed backend.
   if (
     value.startsWith('http://localhost:5000') ||
     value.startsWith('http://127.0.0.1:5000')
   ) {
-    const path = value.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1):5000/, '');
+    const path = value.replace(
+      /^https?:\/\/(?:localhost|127\.0\.0\.1):5000/,
+      ''
+    );
+
     return `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
-  // Already an absolute URL.
   if (/^https?:\/\//i.test(value)) {
     return value;
   }
 
-  // Remove accidental /api prefix from media paths.
   let path = value.replace(/^\/+/, '');
 
   if (path.startsWith('api/uploads/')) {
@@ -152,6 +138,7 @@ const MarketplaceAdmin = () => {
   const [productError, setProductError] = useState('');
   const [searchProduct, setSearchProduct] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
@@ -172,7 +159,6 @@ const MarketplaceAdmin = () => {
     setProductError('');
 
     try {
-      // API_URL already contains /api.
       const response = await api.get('/admin/products');
 
       const data =
@@ -196,8 +182,9 @@ const MarketplaceAdmin = () => {
 
   const loadCategories = async () => {
     try {
-      // API_URL already contains /api.
-      const response = await api.get('/public/marketplace/categories');
+      const response = await api.get(
+        '/public/marketplace/categories'
+      );
 
       const data =
         response.data?.categories ||
@@ -219,7 +206,10 @@ const MarketplaceAdmin = () => {
         }
       }
     } catch (error) {
-      console.warn('Categories could not be loaded:', error);
+      console.warn(
+        'Categories could not be loaded:',
+        error
+      );
     }
   };
 
@@ -228,7 +218,6 @@ const MarketplaceAdmin = () => {
     setMessageError('');
 
     try {
-      // API_URL already contains /api.
       const response = await api.get('/admin/messages');
 
       const data =
@@ -300,7 +289,9 @@ const MarketplaceAdmin = () => {
     });
 
     setProductImage(null);
-    setImagePreview(getMediaUrl(product.image_url || ''));
+    setImagePreview(
+      getMediaUrl(product.image_url || '')
+    );
     setShowProductModal(true);
   };
 
@@ -351,7 +342,10 @@ const MarketplaceAdmin = () => {
       return;
     }
 
-    if (!productForm.price || Number(productForm.price) < 0) {
+    if (
+      !productForm.price ||
+      Number(productForm.price) < 0
+    ) {
       alert('Please enter a valid price.');
       return;
     }
@@ -411,7 +405,6 @@ const MarketplaceAdmin = () => {
 
         formData.append('image', productImage);
 
-        // API_URL already contains /api.
         await api.post(
           `/admin/products/${productId}/image`,
           formData,
@@ -453,8 +446,9 @@ const MarketplaceAdmin = () => {
     }
 
     try {
-      // API_URL already contains /api.
-      await api.delete(`/admin/products/${product.id}`);
+      await api.delete(
+        `/admin/products/${product.id}`
+      );
 
       setProducts((previous) =>
         previous.filter(
@@ -464,7 +458,10 @@ const MarketplaceAdmin = () => {
 
       alert('Product deleted successfully.');
     } catch (error) {
-      console.error('Delete product error:', error);
+      console.error(
+        'Delete product error:',
+        error
+      );
 
       alert(
         error.response?.data?.message ||
@@ -474,7 +471,9 @@ const MarketplaceAdmin = () => {
   };
 
   const filteredProducts = useMemo(() => {
-    const search = searchProduct.trim().toLowerCase();
+    const search = searchProduct
+      .trim()
+      .toLowerCase();
 
     return products.filter((product) => {
       const matchesSearch =
@@ -494,7 +493,11 @@ const MarketplaceAdmin = () => {
 
       return matchesSearch && matchesCategory;
     });
-  }, [products, searchProduct, categoryFilter]);
+  }, [
+    products,
+    searchProduct,
+    categoryFilter,
+  ]);
 
   const getStockStatus = (stock) => {
     const quantity = Number(stock || 0);
@@ -521,12 +524,16 @@ const MarketplaceAdmin = () => {
 
   const unreadMessages = messages.filter(
     (message) =>
-      String(message.status || '').toLowerCase() === 'new' ||
-      String(message.status || '').toLowerCase() === 'unread'
+      String(message.status || '').toLowerCase() ===
+        'new' ||
+      String(message.status || '').toLowerCase() ===
+        'unread'
   ).length;
 
   const filteredMessages = useMemo(() => {
-    const search = searchMessage.trim().toLowerCase();
+    const search = searchMessage
+      .trim()
+      .toLowerCase();
 
     return messages.filter((message) => {
       const status = String(
@@ -554,7 +561,11 @@ const MarketplaceAdmin = () => {
 
       return matchesStatus && matchesSearch;
     });
-  }, [messages, searchMessage, messageFilter]);
+  }, [
+    messages,
+    searchMessage,
+    messageFilter,
+  ]);
 
   const viewMessage = async (message) => {
     setSelectedMessage(message);
@@ -563,9 +574,11 @@ const MarketplaceAdmin = () => {
       message.status || ''
     ).toLowerCase();
 
-    if (status === 'new' || status === 'unread') {
+    if (
+      status === 'new' ||
+      status === 'unread'
+    ) {
       try {
-        // API_URL already contains /api.
         await api.put(
           `/admin/messages/${message.id}/read`
         );
@@ -600,7 +613,6 @@ const MarketplaceAdmin = () => {
 
   const markReplied = async (message) => {
     try {
-      // API_URL already contains /api.
       await api.put(
         `/admin/messages/${message.id}/replied`
       );
@@ -649,7 +661,6 @@ const MarketplaceAdmin = () => {
     setDeletingMessage(true);
 
     try {
-      // API_URL already contains /api.
       await api.delete(
         `/admin/messages/${message.id}`
       );
@@ -720,7 +731,9 @@ const MarketplaceAdmin = () => {
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; }
+        * {
+          box-sizing: border-box;
+        }
 
         .msr-admin {
           min-height: 100vh;
@@ -757,7 +770,7 @@ const MarketplaceAdmin = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
+          font-size: 16px;
           margin-right: 11px;
           font-weight: 800;
         }
@@ -1015,6 +1028,11 @@ const MarketplaceAdmin = () => {
           white-space: nowrap;
         }
 
+        .msr-button:disabled {
+          opacity: .6;
+          cursor: not-allowed;
+        }
+
         .msr-button-primary {
           background: ${SCOUT.purple};
           color: white;
@@ -1027,6 +1045,10 @@ const MarketplaceAdmin = () => {
         .msr-button-gold {
           background: ${SCOUT.gold};
           color: ${SCOUT.navy};
+        }
+
+        .msr-button-gold:hover {
+          filter: brightness(.96);
         }
 
         .msr-button-secondary {
@@ -1042,6 +1064,14 @@ const MarketplaceAdmin = () => {
         .msr-button-success {
           background: ${SCOUT.lightGreen};
           color: ${SCOUT.green};
+        }
+
+        .msr-sidebar-new-product {
+          width: 100%;
+          margin-bottom: 18px;
+          height: 44px;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .msr-table-container {
@@ -1301,28 +1331,61 @@ const MarketplaceAdmin = () => {
           color: ${SCOUT.muted};
         }
 
+        /* PRODUCT SIDE PANEL */
+
         .msr-modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,.58);
+          background: rgba(0,0,0,.48);
           z-index: 1000;
           display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
+          align-items: flex-start;
+          justify-content: flex-start;
         }
 
         .msr-modal {
-          width: min(760px, 100%);
-          max-height: 92vh;
+          width: min(760px, 92vw);
+          height: 100vh;
+          max-height: 100vh;
           overflow-y: auto;
           background: white;
-          border-radius: 15px;
-          box-shadow: 0 25px 70px rgba(0,0,0,.3);
+          border-radius: 0 16px 16px 0;
+          box-shadow: 15px 0 50px rgba(0,0,0,.28);
+          animation: msrSlideIn .25s ease;
+        }
+
+        @keyframes msrSlideIn {
+          from {
+            transform: translateX(-100%);
+            opacity: .5;
+          }
+
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
         }
 
         .msr-modal.small {
-          width: min(600px, 100%);
+          width: min(600px, 92vw);
+          height: auto;
+          max-height: 92vh;
+          margin-top: 40px;
+          margin-left: 40px;
+          border-radius: 15px;
+          animation: msrModalFade .2s ease;
+        }
+
+        @keyframes msrModalFade {
+          from {
+            transform: scale(.96);
+            opacity: 0;
+          }
+
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
 
         .msr-modal-header {
@@ -1352,6 +1415,11 @@ const MarketplaceAdmin = () => {
           cursor: pointer;
           font-size: 18px;
           color: ${SCOUT.text};
+        }
+
+        .msr-close:hover {
+          background: ${SCOUT.lightRed};
+          color: ${SCOUT.red};
         }
 
         .msr-modal-body {
@@ -1416,6 +1484,7 @@ const MarketplaceAdmin = () => {
           text-align: center;
           cursor: pointer;
           transition: .2s ease;
+          display: block;
         }
 
         .msr-upload:hover {
@@ -1486,6 +1555,7 @@ const MarketplaceAdmin = () => {
           position: sticky;
           bottom: 0;
           background: white;
+          z-index: 2;
         }
 
         .msr-message-detail {
@@ -1546,7 +1616,7 @@ const MarketplaceAdmin = () => {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .msr-content {
+          .msr-admin-content {
             padding: 20px;
           }
 
@@ -1560,6 +1630,10 @@ const MarketplaceAdmin = () => {
 
           .msr-spec-grid {
             grid-template-columns: 1fr;
+          }
+
+          .msr-modal {
+            width: min(700px, 94vw);
           }
         }
 
@@ -1580,6 +1654,7 @@ const MarketplaceAdmin = () => {
 
           .msr-admin-nav {
             display: flex;
+            flex-wrap: wrap;
             padding: 10px;
             gap: 8px;
           }
@@ -1588,10 +1663,16 @@ const MarketplaceAdmin = () => {
             display: none;
           }
 
+          .msr-sidebar-new-product {
+            width: 100%;
+            margin-bottom: 2px;
+          }
+
           .msr-admin-nav-button {
             margin: 0;
             justify-content: center;
             padding: 11px;
+            flex: 1;
           }
 
           .msr-admin-nav-button span:not(.msr-admin-nav-icon):not(.msr-message-count) {
@@ -1639,11 +1720,24 @@ const MarketplaceAdmin = () => {
           }
 
           .msr-modal-overlay {
-            padding: 10px;
+            align-items: flex-start;
           }
 
           .msr-modal {
-            max-height: 96vh;
+            width: 94vw;
+            max-width: 94vw;
+            height: 100vh;
+            max-height: 100vh;
+            border-radius: 0 14px 14px 0;
+          }
+
+          .msr-modal.small {
+            width: 94vw;
+            max-width: 94vw;
+            height: auto;
+            max-height: 94vh;
+            margin: 10px;
+            border-radius: 14px;
           }
 
           .msr-modal-footer {
@@ -1686,6 +1780,16 @@ const MarketplaceAdmin = () => {
             <div className="msr-admin-nav-label">
               Management
             </div>
+
+            {activeSection === 'products' && (
+              <button
+                type="button"
+                className="msr-button msr-button-gold msr-sidebar-new-product"
+                onClick={openAddProduct}
+              >
+                ＋ New Product
+              </button>
+            )}
 
             <button
               type="button"
@@ -1832,7 +1936,9 @@ const MarketplaceAdmin = () => {
                       placeholder="Search products..."
                       value={searchProduct}
                       onChange={(e) =>
-                        setSearchProduct(e.target.value)
+                        setSearchProduct(
+                          e.target.value
+                        )
                       }
                     />
                   </div>
@@ -1841,7 +1947,9 @@ const MarketplaceAdmin = () => {
                     className="msr-select"
                     value={categoryFilter}
                     onChange={(e) =>
-                      setCategoryFilter(e.target.value)
+                      setCategoryFilter(
+                        e.target.value
+                      )
                     }
                   >
                     <option value="all">
@@ -1858,14 +1966,6 @@ const MarketplaceAdmin = () => {
                       </option>
                     ))}
                   </select>
-
-                  <button
-                    type="button"
-                    className="msr-button msr-button-primary"
-                    onClick={openAddProduct}
-                  >
-                    ＋ Add Product
-                  </button>
                 </div>
 
                 <div className="msr-table-container">
@@ -1994,8 +2094,7 @@ const MarketplaceAdmin = () => {
 
                                   <td>
                                     <span className="msr-stock-number">
-                                      {product.stock ??
-                                        0}
+                                      {product.stock ?? 0}
                                     </span>
                                   </td>
 
@@ -2063,7 +2162,9 @@ const MarketplaceAdmin = () => {
                       placeholder="Search messages..."
                       value={searchMessage}
                       onChange={(e) =>
-                        setSearchMessage(e.target.value)
+                        setSearchMessage(
+                          e.target.value
+                        )
                       }
                     />
                   </div>
@@ -2072,7 +2173,9 @@ const MarketplaceAdmin = () => {
                     className="msr-select"
                     value={messageFilter}
                     onChange={(e) =>
-                      setMessageFilter(e.target.value)
+                      setMessageFilter(
+                        e.target.value
+                      )
                     }
                   >
                     <option value="all">
