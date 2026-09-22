@@ -13,10 +13,8 @@ const Marketplace = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [selectedCategory, setSelectedCategory] =
     useState('all');
-
   const [searchTerm, setSearchTerm] = useState('');
 
   // ============================================================
@@ -74,26 +72,43 @@ const Marketplace = () => {
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '';
 
-    // Already a complete URL
-    if (
-      imageUrl.startsWith('http://') ||
-      imageUrl.startsWith('https://') ||
-      imageUrl.startsWith('data:')
-    ) {
-      return imageUrl;
+    const value = String(imageUrl).trim();
+
+    if (!value) return '';
+
+    // Cloudinary or any other complete HTTP/HTTPS URL
+    if (/^https?:\/\//i.test(value)) {
+      return value;
     }
 
-    // Backend-relative image
-    if (imageUrl.startsWith('/')) {
+    // Data URL
+    if (value.startsWith('data:')) {
+      return value;
+    }
+
+    // Protocol-relative URL
+    if (value.startsWith('//')) {
+      return `https:${value}`;
+    }
+
+    // Old backend-relative image
+    // Example: /uploads/products/image.jpg
+    if (value.startsWith('/')) {
       const backendBase = API_URL.replace(
         /\/api\/?$/,
         ''
       );
 
-      return `${backendBase}${imageUrl}`;
+      return `${backendBase}${value}`;
     }
 
-    return imageUrl;
+    // Old database value containing only a filename
+    const backendBase = API_URL.replace(
+      /\/api\/?$/,
+      ''
+    );
+
+    return `${backendBase}/uploads/${value}`;
   };
 
   // ============================================================
@@ -239,7 +254,6 @@ const Marketplace = () => {
   if (loading) {
     return (
       <div className="marketplace-loading-page">
-
         <div className="marketplace-spinner">
           <div className="spinner-inner"></div>
         </div>
@@ -252,7 +266,6 @@ const Marketplace = () => {
         </p>
 
         <style>{`
-
           .marketplace-loading-page {
             min-height: 70vh;
             display: flex;
@@ -298,7 +311,6 @@ const Marketplace = () => {
               transform: rotate(360deg);
             }
           }
-
         `}</style>
       </div>
     );
@@ -316,7 +328,6 @@ const Marketplace = () => {
       ====================================================== */}
 
       <section className="marketplace-hero">
-
         <div className="marketplace-container">
 
           <Link
@@ -343,7 +354,6 @@ const Marketplace = () => {
           </p>
 
           <div className="marketplace-hero-stats">
-
             <div className="hero-stat">
               <strong>
                 {products.length}
@@ -377,11 +387,8 @@ const Marketplace = () => {
                 Local Pricing
               </span>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       {/* ======================================================
@@ -389,7 +396,6 @@ const Marketplace = () => {
       ====================================================== */}
 
       <section className="marketplace-section">
-
         <div className="marketplace-container">
 
           {/* ==================================================
@@ -399,7 +405,6 @@ const Marketplace = () => {
           <div className="marketplace-filter-card">
 
             <div className="filter-heading">
-
               <div className="filter-heading-icon">
                 <i className="fas fa-shopping-bag"></i>
               </div>
@@ -414,7 +419,6 @@ const Marketplace = () => {
                   scouting activities
                 </p>
               </div>
-
             </div>
 
             <div className="marketplace-filters">
@@ -422,7 +426,6 @@ const Marketplace = () => {
               {/* Search */}
 
               <div className="search-wrapper">
-
                 <i className="fas fa-search"></i>
 
                 <input
@@ -449,13 +452,11 @@ const Marketplace = () => {
                     <i className="fas fa-times"></i>
                   </button>
                 )}
-
               </div>
 
               {/* Category */}
 
               <div className="category-wrapper">
-
                 <i className="fas fa-tags"></i>
 
                 <select
@@ -472,7 +473,6 @@ const Marketplace = () => {
                   </option>
 
                   {categories.map((category) => {
-
                     const name =
                       getCategoryName(
                         category
@@ -490,15 +490,12 @@ const Marketplace = () => {
                       </option>
                     );
                   })}
-
                 </select>
-
               </div>
 
               {/* Count */}
 
               <div className="product-count">
-
                 <strong>
                   {filteredProducts.length}
                 </strong>
@@ -508,11 +505,8 @@ const Marketplace = () => {
                     ? 'product found'
                     : 'products found'}
                 </span>
-
               </div>
-
             </div>
-
           </div>
 
           {/* ==================================================
@@ -527,7 +521,6 @@ const Marketplace = () => {
               </div>
 
               <div className="error-content">
-
                 <strong>
                   Marketplace unavailable
                 </strong>
@@ -535,7 +528,6 @@ const Marketplace = () => {
                 <p>
                   {error}
                 </p>
-
               </div>
 
               <button
@@ -545,7 +537,6 @@ const Marketplace = () => {
                 <i className="fas fa-redo"></i>
                 Retry
               </button>
-
             </div>
           )}
 
@@ -557,7 +548,6 @@ const Marketplace = () => {
             <div className="products-header">
 
               <div>
-
                 <span className="products-label">
                   OFFICIAL SCOUT PRODUCTS
                 </span>
@@ -567,7 +557,6 @@ const Marketplace = () => {
                     ? 'Shop Our Collection'
                     : selectedCategory}
                 </h2>
-
               </div>
 
               {(searchTerm ||
@@ -581,7 +570,6 @@ const Marketplace = () => {
                   Clear Filters
                 </button>
               )}
-
             </div>
           )}
 
@@ -590,7 +578,6 @@ const Marketplace = () => {
           ================================================== */}
 
           {filteredProducts.length === 0 ? (
-
             <div className="marketplace-empty">
 
               <div className="empty-icon">
@@ -623,9 +610,7 @@ const Marketplace = () => {
                   Reset Filters
                 </button>
               )}
-
             </div>
-
           ) : (
 
             /* ==================================================
@@ -646,7 +631,6 @@ const Marketplace = () => {
                     );
 
                   return (
-
                     <article
                       className="product-card"
                       key={product.id}
@@ -659,7 +643,6 @@ const Marketplace = () => {
                       <div className="product-image">
 
                         {imageUrl ? (
-
                           <img
                             src={imageUrl}
                             alt={
@@ -684,7 +667,6 @@ const Marketplace = () => {
                               }
                             }}
                           />
-
                         ) : null}
 
                         <div
@@ -701,11 +683,9 @@ const Marketplace = () => {
                         {/* Category */}
 
                         <div className="product-image-category">
-
                           {product.category ||
                             product.category_name ||
                             'General'}
-
                         </div>
 
                         {/* Stock */}
@@ -733,7 +713,6 @@ const Marketplace = () => {
                               In Stock
                             </span>
                           )}
-
                       </div>
 
                       {/* =================================================
@@ -755,7 +734,6 @@ const Marketplace = () => {
                         {/* Price */}
 
                         <div className="product-price-row">
-
                           <div>
                             <span className="price-label">
                               PRICE
@@ -767,13 +745,11 @@ const Marketplace = () => {
                               )}
                             </div>
                           </div>
-
                         </div>
 
                         {/* Product meta */}
 
                         <div className="product-meta">
-
                           <span>
                             <i className="fas fa-shield-alt"></i>
                             Official Scout Item
@@ -787,7 +763,6 @@ const Marketplace = () => {
                               available
                             </span>
                           )}
-
                         </div>
 
                         {/* Button */}
@@ -802,21 +777,14 @@ const Marketplace = () => {
 
                           <i className="fas fa-arrow-right"></i>
                         </Link>
-
                       </div>
-
                     </article>
-
                   );
                 }
               )}
-
             </div>
-
           )}
-
         </div>
-
       </section>
 
       {/* ======================================================
@@ -824,7 +792,6 @@ const Marketplace = () => {
       ====================================================== */}
 
       <section className="marketplace-cta">
-
         <div className="marketplace-container">
 
           <div className="cta-icon">
@@ -832,7 +799,6 @@ const Marketplace = () => {
           </div>
 
           <div className="cta-content">
-
             <span>
               SHOP WITH CONFIDENCE
             </span>
@@ -846,7 +812,6 @@ const Marketplace = () => {
               getting the uniforms, equipment and
               merchandise you need.
             </p>
-
           </div>
 
           <Link
@@ -856,9 +821,7 @@ const Marketplace = () => {
             Contact Us
             <i className="fas fa-arrow-right"></i>
           </Link>
-
         </div>
-
       </section>
 
       {/* ======================================================
@@ -866,7 +829,6 @@ const Marketplace = () => {
       ====================================================== */}
 
       <style>{`
-
         /* =====================================================
            BASE
         ===================================================== */
@@ -1459,7 +1421,6 @@ const Marketplace = () => {
           color: #6b7972;
           font-size: 0.84rem;
           line-height: 1.65;
-
           display: -webkit-box;
           -webkit-box-orient: vertical;
           -webkit-line-clamp: 2;
@@ -1704,7 +1665,6 @@ const Marketplace = () => {
         ===================================================== */
 
         @media (max-width: 1000px) {
-
           .products-grid {
             grid-template-columns:
               repeat(
@@ -1723,7 +1683,6 @@ const Marketplace = () => {
             grid-column: 1 / -1;
             justify-content: flex-start;
           }
-
         }
 
         /* =====================================================
@@ -1731,7 +1690,6 @@ const Marketplace = () => {
         ===================================================== */
 
         @media (max-width: 680px) {
-
           .marketplace-container {
             padding: 0 17px;
           }
@@ -1821,7 +1779,6 @@ const Marketplace = () => {
             width: 100%;
             justify-content: center;
           }
-
         }
 
         /* =====================================================
@@ -1829,7 +1786,6 @@ const Marketplace = () => {
         ===================================================== */
 
         @media (max-width: 420px) {
-
           .marketplace-hero {
             padding: 40px 0 44px;
           }
@@ -1858,9 +1814,7 @@ const Marketplace = () => {
           .product-info {
             padding: 17px;
           }
-
         }
-
       `}</style>
     </div>
   );

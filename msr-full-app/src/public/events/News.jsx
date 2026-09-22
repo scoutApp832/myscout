@@ -22,20 +22,15 @@ const SCOUT = {
   purple: '#6A1B9A',
   purpleDark: '#4A148C',
   purpleLight: '#F3E5F5',
-
   blue: '#002B5C',
   blueDark: '#001B3A',
   blueLight: '#EAF2FA',
-
   gold: '#FFD100',
   goldDark: '#E5B900',
-
   green: '#2E7D32',
   red: '#C62828',
-
   white: '#FFFFFF',
   black: '#111827',
-
   gray50: '#F8F9FA',
   gray100: '#F3F4F6',
   gray200: '#E5E7EB',
@@ -53,49 +48,55 @@ const SCOUT_PLATFORMS = [
   {
     name: 'YouTube',
     icon: '▶',
-    description: 'Watch Scout videos, activities and stories.',
+    description:
+      'Watch Rwanda Scouts Association videos, activities and stories.',
     action: 'Watch Videos',
-    url: 'https://www.youtube.com/',
+    url: 'https://www.youtube.com/@rwandascouts',
     className: 'youtube',
   },
   {
     name: 'X',
     icon: '𝕏',
-    description: 'Follow Scout news and updates on X.',
+    description:
+      'Follow Rwanda Scouts Association news and updates on X.',
     action: 'Follow Us',
-    url: 'https://x.com/',
+    url: 'https://x.com/rwandascouts',
     className: 'x',
   },
   {
     name: 'Facebook',
     icon: 'f',
-    description: 'Connect with the Scout community.',
+    description:
+      'Connect with the Rwanda Scouts Association community.',
     action: 'Follow Us',
-    url: 'https://www.facebook.com/',
+    url: 'https://www.facebook.com/rwandascout',
     className: 'facebook',
   },
   {
     name: 'Instagram',
     icon: '◎',
-    description: 'See Scout activities, photos and stories.',
+    description:
+      'See Rwanda Scouts Association activities, photos and stories.',
     action: 'Follow Us',
-    url: 'https://www.instagram.com/',
+    url: 'https://www.instagram.com/rwanda_scouts/',
     className: 'instagram',
   },
   {
     name: 'TikTok',
     icon: '♪',
-    description: 'Watch short Scout videos and activities.',
+    description:
+      'Watch Rwanda Scouts Association short videos and activities.',
     action: 'Follow Us',
-    url: 'https://www.tiktok.com/',
+    url: 'https://www.tiktok.com/search?q=rwanda%20scouts%20association',
     className: 'tiktok',
   },
   {
     name: 'Scout Website',
     icon: '🌐',
-    description: 'Visit the official Scout website.',
-    action: 'Visit Website',
-    url: 'https://scouts.org.rw/',
+    description:
+      'Visit the official Rwanda Scouts Association website.',
+    action: 'Visit RSA Website',
+    url: 'https://myscout.onrender.com/',
     className: 'website',
   },
 ];
@@ -107,15 +108,33 @@ const SCOUT_PLATFORMS = [
 const getImageUrl = (imageUrl) => {
   if (!imageUrl) return null;
 
-  if (
-    imageUrl.startsWith('http://') ||
-    imageUrl.startsWith('https://') ||
-    imageUrl.startsWith('data:')
-  ) {
-    return imageUrl;
+  const value = String(imageUrl).trim();
+
+  if (!value) return null;
+
+  // Cloudinary or any other complete HTTP/HTTPS URL
+  if (/^https?:\/\//i.test(value)) {
+    return value;
   }
 
-  return `${BACKEND_URL}/${imageUrl.replace(/^\/+/, '')}`;
+  // Data URL
+  if (value.startsWith('data:')) {
+    return value;
+  }
+
+  // Protocol-relative URL
+  if (value.startsWith('//')) {
+    return `https:${value}`;
+  }
+
+  // Old backend-relative image
+  // Example: /uploads/news/image.jpg
+  if (value.startsWith('/')) {
+    return `${BACKEND_URL}${value}`;
+  }
+
+  // Old database value without leading slash
+  return `${BACKEND_URL}/${value.replace(/^\/+/, '')}`;
 };
 
 // ============================================================
@@ -203,17 +222,12 @@ const News = () => {
 
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [articleLoading, setArticleLoading] = useState(false);
-
   const [error, setError] = useState('');
   const [articleError, setArticleError] = useState('');
-
   const [selectedArticle, setSelectedArticle] = useState(null);
-
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-
   const [heroIndex, setHeroIndex] = useState(0);
 
   // ==========================================================
@@ -563,13 +577,12 @@ const News = () => {
     return (
       <>
         <div className="modern-news-page">
-
           {/* ARTICLE HERO */}
+
           <section className="article-top">
             <div className="article-top-overlay"></div>
 
             <div className="news-container article-top-inner">
-
               <button
                 className="article-back"
                 onClick={() =>
@@ -607,11 +620,10 @@ const News = () => {
           </section>
 
           {/* ARTICLE BODY */}
+
           <main className="article-main">
             <div className="news-container">
-
               <article className="article-main-card">
-
                 {articleImage ? (
                   <div className="article-cover">
                     <img
@@ -630,6 +642,7 @@ const News = () => {
                 ) : (
                   <div className="article-cover-placeholder">
                     <span>🏕</span>
+
                     <strong>
                       MyScout Rwanda
                     </strong>
@@ -637,7 +650,6 @@ const News = () => {
                 )}
 
                 <div className="article-main-body">
-
                   {selectedArticle.excerpt && (
                     <div className="article-lead">
                       {selectedArticle.excerpt}
@@ -649,18 +661,16 @@ const News = () => {
                       selectedArticle
                     )}
                   </div>
-
                 </div>
               </article>
-
             </div>
           </main>
 
           {/* RELATED */}
+
           {relatedNews.length > 0 && (
             <section className="related-news-section">
               <div className="news-container">
-
                 <div className="section-title-row">
                   <div>
                     <span>
@@ -689,12 +699,12 @@ const News = () => {
                     />
                   ))}
                 </div>
-
               </div>
             </section>
           )}
 
           {/* SOCIAL */}
+
           <SocialSection />
 
           <div className="back-news-bottom">
@@ -707,7 +717,6 @@ const News = () => {
               ← Back to All News
             </button>
           </div>
-
         </div>
 
         <NewsStyles />
@@ -722,13 +731,11 @@ const News = () => {
   return (
     <>
       <div className="modern-news-page">
-
         {/* ====================================================
             PHOTO HERO
         ==================================================== */}
 
         <section className="news-photo-hero">
-
           {heroNews.length > 0 ? (
             heroNews.map((item, index) => {
               const image =
@@ -763,7 +770,6 @@ const News = () => {
           )}
 
           <div className="news-container hero-content">
-
             <div className="hero-badge">
               MSR NEWS
             </div>
@@ -789,7 +795,6 @@ const News = () => {
                 <span>→</span>
               </Link>
             )}
-
           </div>
 
           {/* SLIDER DOTS */}
@@ -816,7 +821,6 @@ const News = () => {
           )}
 
           <div className="hero-bottom-wave"></div>
-
         </section>
 
         {/* ====================================================
@@ -825,9 +829,7 @@ const News = () => {
 
         <section className="latest-section">
           <div className="news-container">
-
             <div className="latest-heading">
-
               <div>
                 <span className="section-label">
                   MYSCOUT RWANDA
@@ -848,19 +850,18 @@ const News = () => {
                 <strong>
                   {filteredNews.length}
                 </strong>
+
                 <span>
                   {filteredNews.length === 1
                     ? 'Story'
                     : 'Stories'}
                 </span>
               </div>
-
             </div>
 
             {/* SEARCH */}
 
             <div className="modern-news-tools">
-
               <div className="modern-search">
                 <span>⌕</span>
 
@@ -903,7 +904,6 @@ const News = () => {
                   </button>
                 ))}
               </div>
-
             </div>
 
             {/* ERROR */}
@@ -937,9 +937,7 @@ const News = () => {
               category === 'All' &&
               featuredArticle && (
                 <section className="featured-story">
-
                   <div className="featured-image">
-
                     {getNewsImage(
                       featuredArticle
                     ) ? (
@@ -960,11 +958,9 @@ const News = () => {
                     <div className="featured-badge">
                       FEATURED STORY
                     </div>
-
                   </div>
 
                   <div className="featured-content">
-
                     <div className="featured-category">
                       {getCategory(
                         featuredArticle
@@ -997,9 +993,7 @@ const News = () => {
                       Read Full Story
                       <span>→</span>
                     </Link>
-
                   </div>
-
                 </section>
               )}
 
@@ -1007,7 +1001,6 @@ const News = () => {
 
             {filteredNews.length === 0 ? (
               <div className="modern-empty">
-
                 <div className="empty-symbol">
                   📰
                 </div>
@@ -1034,15 +1027,13 @@ const News = () => {
                     Clear Filters
                   </button>
                 )}
-
               </div>
             ) : (
               <>
-
                 <div className="grid-heading">
                   <h3>
                     {search
-                      ? `Search Results`
+                      ? 'Search Results'
                       : 'More Stories'}
                   </h3>
 
@@ -1053,7 +1044,6 @@ const News = () => {
                 </div>
 
                 <div className="modern-news-grid">
-
                   {filteredNews
                     .slice(
                       search ||
@@ -1067,12 +1057,9 @@ const News = () => {
                         item={item}
                       />
                     ))}
-
                 </div>
-
               </>
             )}
-
           </div>
         </section>
 
@@ -1081,7 +1068,6 @@ const News = () => {
         ==================================================== */}
 
         <SocialSection />
-
       </div>
 
       <NewsStyles />
@@ -1098,12 +1084,10 @@ const NewsCard = ({ item }) => {
 
   return (
     <article className="modern-news-card">
-
       <Link
         to={`/news/${item.id}`}
         className="modern-card-image"
       >
-
         {image ? (
           <img
             src={image}
@@ -1120,6 +1104,7 @@ const NewsCard = ({ item }) => {
         ) : (
           <div className="modern-card-placeholder">
             <span>📰</span>
+
             <small>
               MyScout Rwanda
             </small>
@@ -1133,11 +1118,9 @@ const NewsCard = ({ item }) => {
         <span className="card-arrow">
           →
         </span>
-
       </Link>
 
       <div className="modern-card-content">
-
         <div className="modern-card-date">
           {formatDate(
             item.created_at ||
@@ -1165,9 +1148,7 @@ const NewsCard = ({ item }) => {
           Read More
           <span>→</span>
         </Link>
-
       </div>
-
     </article>
   );
 };
@@ -1178,11 +1159,8 @@ const NewsCard = ({ item }) => {
 
 const SocialSection = () => (
   <section className="social-section">
-
     <div className="news-container">
-
       <div className="social-heading">
-
         <span>
           FOLLOW MSR
         </span>
@@ -1196,11 +1174,9 @@ const SocialSection = () => (
           Scout stories, activities, videos
           and community updates.
         </p>
-
       </div>
 
       <div className="social-grid">
-
         {SCOUT_PLATFORMS.map(
           (platform) => (
             <a
@@ -1210,7 +1186,6 @@ const SocialSection = () => (
               rel="noopener noreferrer"
               className={`social-card ${platform.className}`}
             >
-
               <div className="social-icon">
                 {platform.icon}
               </div>
@@ -1229,15 +1204,11 @@ const SocialSection = () => (
                   <span> →</span>
                 </strong>
               </div>
-
             </a>
           )
         )}
-
       </div>
-
     </div>
-
   </section>
 );
 
@@ -1247,7 +1218,6 @@ const SocialSection = () => (
 
 const NewsStyles = () => (
   <style>{`
-
 /* ============================================================
    GLOBAL
 ============================================================ */
@@ -1277,7 +1247,6 @@ button,
 input {
   font-family: inherit;
 }
-
 
 /* ============================================================
    PHOTO HERO
@@ -1480,7 +1449,6 @@ input {
     ellipse(58% 100% at 50% 100%);
 }
 
-
 /* ============================================================
    LATEST
 ============================================================ */
@@ -1542,7 +1510,6 @@ input {
   font-size: 12px;
   font-weight: 700;
 }
-
 
 /* ============================================================
    SEARCH
@@ -1631,7 +1598,6 @@ input {
   color: white;
 }
 
-
 /* ============================================================
    FEATURED STORY
 ============================================================ */
@@ -1669,8 +1635,7 @@ input {
   transition: transform 0.6s ease;
 }
 
-.featured-story:hover
-.featured-image img {
+.featured-story:hover .featured-image img {
   transform: scale(1.04);
 }
 
@@ -1748,7 +1713,6 @@ input {
   transform: translateX(5px);
 }
 
-
 /* ============================================================
    GRID HEADING
 ============================================================ */
@@ -1770,7 +1734,6 @@ input {
   color: ${SCOUT.gray500};
   font-size: 12px;
 }
-
 
 /* ============================================================
    NEWS GRID
@@ -1944,7 +1907,6 @@ input {
   transform: translateX(5px);
 }
 
-
 /* ============================================================
    EMPTY
 ============================================================ */
@@ -2006,7 +1968,6 @@ input {
   transform: translateY(-2px);
 }
 
-
 /* ============================================================
    ERROR
 ============================================================ */
@@ -2054,7 +2015,6 @@ input {
   cursor: pointer;
   font-weight: 800;
 }
-
 
 /* ============================================================
    SOCIAL
@@ -2178,7 +2138,6 @@ input {
   color: ${SCOUT.blue};
 }
 
-
 /* ============================================================
    ARTICLE HERO
 ============================================================ */
@@ -2259,7 +2218,6 @@ input {
   color: rgba(255,255,255,0.78);
   font-size: 13px;
 }
-
 
 /* ============================================================
    ARTICLE BODY
@@ -2368,7 +2326,6 @@ input {
   text-align: center;
 }
 
-
 /* ============================================================
    RELATED
 ============================================================ */
@@ -2407,7 +2364,6 @@ input {
   cursor: pointer;
 }
 
-
 /* ============================================================
    BACK BUTTON
 ============================================================ */
@@ -2417,7 +2373,6 @@ input {
   text-align: center;
   background: white;
 }
-
 
 /* ============================================================
    ARTICLE NOT FOUND
@@ -2470,7 +2425,6 @@ input {
   line-height: 1.7;
 }
 
-
 /* ============================================================
    LOADING
 ============================================================ */
@@ -2511,13 +2465,11 @@ input {
   }
 }
 
-
 /* ============================================================
    TABLET
 ============================================================ */
 
 @media (max-width: 1000px) {
-
   .modern-news-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
@@ -2535,16 +2487,13 @@ input {
   .featured-image {
     min-height: 350px;
   }
-
 }
-
 
 /* ============================================================
    MOBILE
 ============================================================ */
 
 @media (max-width: 700px) {
-
   .news-container {
     padding-left: 16px;
     padding-right: 16px;
@@ -2656,16 +2605,13 @@ input {
   .modern-error button {
     margin-left: 53px;
   }
-
 }
-
 
 /* ============================================================
    SMALL MOBILE
 ============================================================ */
 
 @media (max-width: 420px) {
-
   .hero-content h1 {
     font-size: 2.9rem;
   }
@@ -2703,11 +2649,8 @@ input {
   .article-not-found-inner {
     padding: 35px 20px;
   }
-
 }
-
   `}</style>
 );
 
 export default News;
-

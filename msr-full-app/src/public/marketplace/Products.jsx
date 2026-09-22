@@ -1,34 +1,73 @@
+
 // src/public/marketplace/Products.jsx
+
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// ✅ API URL from environment
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-// ✅ Backend URL (remove /api from API_URL)
+// ============================================================
+// API CONFIGURATION
+// ============================================================
+
+const API_URL =
+  process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Backend URL - remove /api from API_URL
 const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
 
-// ✅ Helper function to get full image URL
+// ============================================================
+// IMAGE URL HELPER
+// ============================================================
+// Supports both:
+// 1. Cloudinary / external absolute URLs
+// 2. Old local /uploads/... URLs
+// ============================================================
+
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  
-  // If it's already a full URL (starts with http:// or https://)
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+
+  const cleanPath = String(imagePath).trim();
+
+  if (!cleanPath) return null;
+
+  // ----------------------------------------------------------
+  // Cloudinary or any other complete HTTP/HTTPS URL
+  // ----------------------------------------------------------
+  if (/^https?:\/\//i.test(cleanPath)) {
+    return cleanPath;
   }
-  
-  // If it starts with /, prepend backend URL
-  if (imagePath.startsWith('/')) {
-    return `${BACKEND_URL}${imagePath}`;
+
+  // ----------------------------------------------------------
+  // Protocol-relative URL
+  // Example: //res.cloudinary.com/...
+  // ----------------------------------------------------------
+  if (cleanPath.startsWith('//')) {
+    return `${window.location.protocol}${cleanPath}`;
   }
-  
-  // Otherwise, add /uploads/ prefix
-  return `${BACKEND_URL}/uploads/${imagePath}`;
+
+  // ----------------------------------------------------------
+  // Existing local backend path
+  // Example: /uploads/products/image.jpg
+  // ----------------------------------------------------------
+  if (cleanPath.startsWith('/')) {
+    return `${BACKEND_URL}${cleanPath}`;
+  }
+
+  // ----------------------------------------------------------
+  // Filename only
+  // Example: product-image.jpg
+  // ----------------------------------------------------------
+  return `${BACKEND_URL}/uploads/${cleanPath}`;
 };
+
+// ============================================================
+// PRODUCTS COMPONENT
+// ============================================================
 
 const Products = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,6 +76,10 @@ const Products = () => {
 
   const category = searchParams.get('category') || 'all';
 
+  // ==========================================================
+  // FETCH PRODUCTS
+  // ==========================================================
+
   useEffect(() => {
     fetchProducts();
   }, [category, sortBy]);
@@ -44,12 +87,40 @@ const Products = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError('');
+
       const response = await axios.get(
-        `${API_URL}/public/marketplace/products?category=${category}&sort=${sortBy}`
+        `${API_URL}/public/marketplace/products?category=${encodeURIComponent(
+          category
+        )}&sort=${encodeURIComponent(sortBy)}`
       );
-      setProducts(response.data.products || []);
+
+      const fetchedProducts = response.data.products || [];
+
+      setProducts(fetchedProducts);
+
+      // Clear previous image errors when products are refreshed
+      setImageErrors({});
+
+      console.log(
+        '🛍️ Marketplace products loaded:',
+        fetchedProducts.length
+      );
+
+      fetchedProducts.forEach((product) => {
+        console.log(
+          `🖼️ ${product.name} | Database image_url:`,
+          product.image_url
+        );
+
+        console.log(
+          `🔗 ${product.name} | Final image URL:`,
+          getImageUrl(product.image_url)
+        );
+      });
     } catch (err) {
-      console.error('Error fetching products:', err);
+      console.error('❌ Error fetching products:', err);
+
       setError('Failed to load products');
       setProducts([]);
     } finally {
@@ -57,11 +128,27 @@ const Products = () => {
     }
   };
 
-  const handleImageError = (productId) => {
-    setImageErrors(prev => ({ ...prev, [productId]: true }));
+  // ==========================================================
+  // IMAGE ERROR
+  // ==========================================================
+
+  const handleImageError = (productId, imageUrl) => {
+    console.error(
+      `❌ Product image failed to load. Product ID: ${productId}`
+    );
+
+    console.error('❌ Image URL:', imageUrl);
+
+    setImageErrors((prev) => ({
+      ...prev,
+      [productId]: true
+    }));
   };
 
-  // ✅ Handle Pay Now - Navigate to Payment System with product data
+  // ==========================================================
+  // PAY NOW
+  // ==========================================================
+
   const handlePayNow = (product) => {
     const paymentData = {
       productId: product.id,
@@ -72,25 +159,34 @@ const Products = () => {
       productImage: product.image_url,
       isProductPurchase: true
     };
-    sessionStorage.setItem('productPaymentData', JSON.stringify(paymentData));
-    
-    navigate('/payment', { 
-      state: { 
+
+    sessionStorage.setItem(
+      'productPaymentData',
+      JSON.stringify(paymentData)
+    );
+
+    navigate('/payment', {
+      state: {
         product: paymentData,
         prefill: {
           amount: product.price,
           service: product.name,
           category: product.category || 'product'
         }
-      } 
+      }
     });
   };
+
+  // ==========================================================
+  // LOADING
+  // ==========================================================
 
   if (loading) {
     return (
       <div className="products-loading">
         <div className="products-spinner"></div>
         <p>Loading products...</p>
+
         <style>{`
           .products-loading {
             display: flex;
@@ -100,6 +196,7 @@ const Products = () => {
             min-height: 400px;
             color: #6A1B9A;
           }
+
           .products-spinner {
             width: 48px;
             height: 48px;
@@ -108,131 +205,317 @@ const Products = () => {
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
+
           @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+              transform: rotate(0deg);
+            }
+
+            100% {
+              transform: rotate(360deg);
+            }
           }
-          .products-loading p { margin-top: 12px; }
+
+          .products-loading p {
+            margin-top: 12px;
+          }
         `}</style>
       </div>
     );
   }
 
+  // ==========================================================
+  // PAGE
+  // ==========================================================
+
   return (
     <div className="products-page">
+
+      {/* =====================================================
+          HERO
+      ====================================================== */}
+
       <section className="products-hero">
         <div className="products-container">
-          <Link to="/marketplace" className="products-back">← Back to Marketplace</Link>
-          <span className="products-eyebrow">🛍️ PRODUCTS</span>
+
+          <Link
+            to="/marketplace"
+            className="products-back"
+          >
+            ← Back to Marketplace
+          </Link>
+
+          <span className="products-eyebrow">
+            🛍️ PRODUCTS
+          </span>
+
           <h1>All Products</h1>
-          <p>Browse our complete collection of scout merchandise and supplies</p>
+
+          <p>
+            Browse our complete collection of scout merchandise
+            and supplies
+          </p>
+
         </div>
       </section>
 
+      {/* =====================================================
+          PRODUCTS SECTION
+      ====================================================== */}
+
       <section className="products-section">
         <div className="products-container">
+
+          {/* =================================================
+              TOOLBAR
+          ================================================== */}
+
           <div className="products-toolbar">
+
             <div className="products-count">
-              {products.length} product{products.length !== 1 ? 's' : ''} found
+
+              {products.length} product
+              {products.length !== 1 ? 's' : ''} found
+
               {category !== 'all' && (
                 <span className="category-filter-badge">
+
                   in {category}
+
                   <button
-                    onClick={() => window.location.href = '/products'}
+                    onClick={() => {
+                      window.location.href = '/products';
+                    }}
                     className="remove-filter"
                   >
                     ×
                   </button>
+
                 </span>
               )}
+
             </div>
+
             <div className="products-sort">
-              <label>Sort by:</label>
+
+              <label>
+                Sort by:
+              </label>
+
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) =>
+                  setSortBy(e.target.value)
+                }
                 className="sort-select"
               >
-                <option value="newest">Newest</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="popular">Most Popular</option>
-                <option value="name">Name A-Z</option>
+
+                <option value="newest">
+                  Newest
+                </option>
+
+                <option value="price-low">
+                  Price: Low to High
+                </option>
+
+                <option value="price-high">
+                  Price: High to Low
+                </option>
+
+                <option value="popular">
+                  Most Popular
+                </option>
+
+                <option value="name">
+                  Name A-Z
+                </option>
+
               </select>
+
             </div>
+
           </div>
 
+          {/* =================================================
+              ERROR
+          ================================================== */}
+
           {error && (
-            <div className="products-error">{error}</div>
+            <div className="products-error">
+              {error}
+            </div>
           )}
 
+          {/* =================================================
+              EMPTY
+          ================================================== */}
+
           {products.length === 0 ? (
+
             <div className="products-empty">
-              <span className="empty-icon">🔍</span>
-              <h3>No Products Found</h3>
-              <p>Try adjusting your filters or search criteria.</p>
-              <Link to="/products" className="clear-filters-btn">
+
+              <span className="empty-icon">
+                🔍
+              </span>
+
+              <h3>
+                No Products Found
+              </h3>
+
+              <p>
+                Try adjusting your filters or search criteria.
+              </p>
+
+              <Link
+                to="/products"
+                className="clear-filters-btn"
+              >
                 Clear Filters
               </Link>
+
             </div>
+
           ) : (
+
+            /* =================================================
+               PRODUCT GRID
+            ================================================== */
+
             <div className="products-grid">
+
               {products.map((product) => {
-                // ✅ Get the full image URL
-                const imageUrl = getImageUrl(product.image_url);
-                const hasImageError = imageErrors[product.id];
-                console.log(`🖼️ Product: ${product.name}, Image URL:`, imageUrl);
-                
+
+                const imageUrl =
+                  getImageUrl(product.image_url);
+
+                const hasImageError =
+                  imageErrors[product.id];
+
                 return (
-                  <div className="product-card" key={product.id}>
+
+                  <div
+                    className="product-card"
+                    key={product.id}
+                  >
+
+                    {/* =======================================
+                        PRODUCT IMAGE
+                    ======================================== */}
+
                     <div className="product-image">
-                      {product.image_url && !hasImageError ? (
+
+                      {product.image_url &&
+                      !hasImageError ? (
+
                         <img
                           src={imageUrl}
                           alt={product.name}
-                          onError={() => handleImageError(product.id)}
+                          onError={() =>
+                            handleImageError(
+                              product.id,
+                              imageUrl
+                            )
+                          }
                           loading="lazy"
+                          decoding="async"
                         />
+
                       ) : (
-                        <span className="product-emoji">📦</span>
+
+                        <span className="product-emoji">
+                          📦
+                        </span>
+
                       )}
+
                     </div>
+
+                    {/* =======================================
+                        PRODUCT INFORMATION
+                    ======================================== */}
+
                     <div className="product-info">
-                      <h3>{product.name}</h3>
-                      <p className="product-desc">{product.description}</p>
+
+                      <h3>
+                        {product.name}
+                      </h3>
+
+                      <p className="product-desc">
+                        {product.description}
+                      </p>
+
                       <div className="product-price">
-                        {product.price ? `RWF ${Number(product.price).toLocaleString()}` : 'Price on Request'}
+
+                        {product.price
+                          ? `RWF ${Number(
+                              product.price
+                            ).toLocaleString()}`
+                          : 'Price on Request'}
+
                       </div>
+
                       <div className="product-category">
-                        <span className="category-tag">{product.category || 'General'}</span>
+
+                        <span className="category-tag">
+                          {product.category ||
+                            'General'}
+                        </span>
+
                       </div>
+
+                      {/* =====================================
+                          ACTIONS
+                      ====================================== */}
+
                       <div className="product-actions">
-                        <Link to={`/marketplace/${product.id}`} className="product-btn">
+
+                        <Link
+                          to={`/marketplace/${product.id}`}
+                          className="product-btn"
+                        >
                           View Details →
                         </Link>
+
                         {product.price > 0 && (
+
                           <button
-                            onClick={() => handlePayNow(product)}
+                            onClick={() =>
+                              handlePayNow(product)
+                            }
                             className="pay-now-btn"
                           >
                             💳 Pay Now
                           </button>
+
                         )}
+
                       </div>
+
                     </div>
+
                   </div>
+
                 );
               })}
+
             </div>
+
           )}
+
         </div>
       </section>
 
+      {/* =====================================================
+          STYLES
+      ====================================================== */}
+
       <style>{`
+
         .products-page {
           background: #f8f9fa;
           min-height: calc(100vh - 200px);
         }
+
         .products-container {
           max-width: 1200px;
           margin: 0 auto;
@@ -240,19 +523,26 @@ const Products = () => {
         }
 
         .products-hero {
-          background: linear-gradient(135deg, #002B5C, #6A1B9A);
+          background: linear-gradient(
+            135deg,
+            #002B5C,
+            #6A1B9A
+          );
           padding: 60px 20px 50px;
           color: white;
         }
+
         .products-hero h1 {
           font-size: clamp(2rem, 4vw, 3rem);
           margin: 8px 0;
         }
+
         .products-hero p {
           font-size: clamp(0.95rem, 1.5vw, 1.1rem);
           opacity: 0.9;
           max-width: 600px;
         }
+
         .products-back {
           color: #FFD100;
           text-decoration: none;
@@ -260,7 +550,11 @@ const Products = () => {
           display: inline-block;
           margin-bottom: 16px;
         }
-        .products-back:hover { text-decoration: underline; }
+
+        .products-back:hover {
+          text-decoration: underline;
+        }
+
         .products-eyebrow {
           display: inline-block;
           background: #FFD100;
@@ -273,7 +567,10 @@ const Products = () => {
           letter-spacing: 0.5px;
         }
 
-        .products-section { padding: 30px 0; }
+        .products-section {
+          padding: 30px 0;
+        }
+
         .products-toolbar {
           display: flex;
           justify-content: space-between;
@@ -286,10 +583,12 @@ const Products = () => {
           border: 1px solid #e8d5f0;
           margin-bottom: 24px;
         }
+
         .products-count {
           color: #002B5C;
           font-weight: 500;
         }
+
         .category-filter-badge {
           display: inline-flex;
           align-items: center;
@@ -300,6 +599,7 @@ const Products = () => {
           border-radius: 12px;
           font-size: 0.8rem;
         }
+
         .remove-filter {
           background: none;
           border: none;
@@ -308,16 +608,22 @@ const Products = () => {
           font-size: 1rem;
           padding: 0 4px;
         }
-        .remove-filter:hover { color: #D32F2F; }
+
+        .remove-filter:hover {
+          color: #D32F2F;
+        }
+
         .products-sort {
           display: flex;
           align-items: center;
           gap: 8px;
         }
+
         .products-sort label {
           color: #6B7280;
           font-size: 0.9rem;
         }
+
         .sort-select {
           padding: 6px 12px;
           border: 1px solid #e8d5f0;
@@ -326,6 +632,7 @@ const Products = () => {
           outline: none;
           cursor: pointer;
         }
+
         .sort-select:focus {
           border-color: #6A1B9A;
         }
@@ -346,9 +653,23 @@ const Products = () => {
           border-radius: 12px;
           border: 2px dashed #e8d5f0;
         }
-        .empty-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
-        .products-empty h3 { color: #002B5C; margin: 0; }
-        .products-empty p { color: #6B7280; margin: 8px 0 16px 0; }
+
+        .empty-icon {
+          font-size: 3rem;
+          display: block;
+          margin-bottom: 12px;
+        }
+
+        .products-empty h3 {
+          color: #002B5C;
+          margin: 0;
+        }
+
+        .products-empty p {
+          color: #6B7280;
+          margin: 8px 0 16px 0;
+        }
+
         .clear-filters-btn {
           display: inline-block;
           padding: 8px 24px;
@@ -360,6 +681,7 @@ const Products = () => {
           font-weight: 500;
           transition: all 0.3s ease;
         }
+
         .clear-filters-btn:hover {
           background: #5a1580;
           transform: translateY(-2px);
@@ -367,22 +689,28 @@ const Products = () => {
 
         .products-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          grid-template-columns:
+            repeat(auto-fill, minmax(280px, 1fr));
           gap: 24px;
         }
+
         .product-card {
           background: white;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          box-shadow:
+            0 2px 8px rgba(0, 0, 0, 0.08);
           border: 1px solid #e8d5f0;
           transition: all 0.3s ease;
         }
+
         .product-card:hover {
           transform: translateY(-6px);
-          box-shadow: 0 8px 30px rgba(106,27,154,0.15);
+          box-shadow:
+            0 8px 30px rgba(106, 27, 154, 0.15);
           border-color: #6A1B9A;
         }
+
         .product-image {
           background: #f8f0fa;
           height: 180px;
@@ -391,18 +719,28 @@ const Products = () => {
           justify-content: center;
           overflow: hidden;
         }
+
         .product-image img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          display: block;
         }
-        .product-emoji { font-size: 4rem; }
-        .product-info { padding: 20px; }
+
+        .product-emoji {
+          font-size: 4rem;
+        }
+
+        .product-info {
+          padding: 20px;
+        }
+
         .product-info h3 {
           color: #002B5C;
           margin: 0 0 4px 0;
           font-size: 1.1rem;
         }
+
         .product-desc {
           color: #6B7280;
           font-size: 0.9rem;
@@ -412,13 +750,18 @@ const Products = () => {
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
+
         .product-price {
           color: #6A1B9A;
           font-weight: 700;
           font-size: 1.2rem;
           margin: 8px 0;
         }
-        .product-category { margin: 8px 0; }
+
+        .product-category {
+          margin: 8px 0;
+        }
+
         .category-tag {
           display: inline-block;
           padding: 2px 12px;
@@ -435,6 +778,7 @@ const Products = () => {
           margin-top: 12px;
           flex-wrap: wrap;
         }
+
         .product-btn {
           display: inline-block;
           padding: 8px 20px;
@@ -448,6 +792,7 @@ const Products = () => {
           flex: 1;
           text-align: center;
         }
+
         .product-btn:hover {
           background: #5a1580;
           transform: translateX(4px);
@@ -470,29 +815,48 @@ const Products = () => {
           justify-content: center;
           gap: 6px;
         }
+
         .pay-now-btn:hover {
           background: #e6bc00;
           border-color: #e6bc00;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(255,209,0,0.3);
+          box-shadow:
+            0 4px 12px rgba(255, 209, 0, 0.3);
         }
 
         @media (max-width: 768px) {
-          .products-hero { padding: 40px 20px; }
+
+          .products-hero {
+            padding: 40px 20px;
+          }
+
           .products-toolbar {
             flex-direction: column;
             align-items: stretch;
           }
-          .products-grid { grid-template-columns: 1fr 1fr; }
+
+          .products-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
           .product-actions {
             flex-direction: column;
           }
         }
+
         @media (max-width: 480px) {
-          .products-grid { grid-template-columns: 1fr; }
-          .product-image { height: 140px; }
+
+          .products-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .product-image {
+            height: 140px;
+          }
         }
+
       `}</style>
+
     </div>
   );
 };
