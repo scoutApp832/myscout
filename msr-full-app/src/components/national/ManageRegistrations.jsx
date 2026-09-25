@@ -79,7 +79,6 @@ const ManageRegistrations = () => {
 
   const [linkGenerationLoading, setLinkGenerationLoading] = useState(false);
 
-  // Notification count is intentionally preserved.
   const [notificationCount, setNotificationCount] = useState(0);
 
   // ============================================
@@ -816,7 +815,6 @@ const ManageRegistrations = () => {
 
       const data = response.data || {};
 
-      // Link may be nested one level deep as `data.data.link` etc.
       const generatedLink =
         data.attendanceLink ||
         data.attendance_link ||
@@ -1422,9 +1420,6 @@ const ManageRegistrations = () => {
         </div>
       </div>
 
-      {/* ============================================
-          ERROR
-          ============================================ */}
       {error && (
         <div className="alert alert-error">
           <i className="fas fa-exclamation-circle"></i>
@@ -1443,9 +1438,6 @@ const ManageRegistrations = () => {
         </div>
       )}
 
-      {/* ============================================
-          SUCCESS / NOTIFICATION MESSAGE
-          ============================================ */}
       {success && (
         <div className="alert alert-success">
           <i className="fas fa-check-circle"></i>
@@ -1497,7 +1489,6 @@ const ManageRegistrations = () => {
         >
           <i className="fas fa-hand-holding-heart"></i>{' '}
           Donations
-
           <span className="badge">
             {safeDonations.length}
           </span>
@@ -1514,7 +1505,6 @@ const ManageRegistrations = () => {
         >
           <i className="fas fa-user-check"></i>{' '}
           Attendance
-
           <span className="badge">
             {safeEvents.length}
           </span>
@@ -1693,10 +1683,7 @@ const ManageRegistrations = () => {
                 <tbody>
                   {filteredRegistrations.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="8"
-                        className="text-center"
-                      >
+                      <td colSpan="8" className="text-center">
                         No registrations found
                       </td>
                     </tr>
@@ -1752,14 +1739,10 @@ const ManageRegistrations = () => {
                               </span>
                             </td>
 
-                            <td>
-                              {memberName}
-                            </td>
+                            <td>{memberName}</td>
 
                             <td>
-                              <strong>
-                                {sin}
-                              </strong>
+                              <strong>{sin}</strong>
                             </td>
 
                             <td>
@@ -1772,9 +1755,7 @@ const ManageRegistrations = () => {
                                   status
                                 )}`}
                               >
-                                {getStatusIcon(
-                                  status
-                                )}{' '}
+                                {getStatusIcon(status)}{' '}
                                 {status
                                   .charAt(0)
                                   .toUpperCase() +
@@ -1784,15 +1765,12 @@ const ManageRegistrations = () => {
 
                             <td>
                               <div className="action-buttons">
-                                {status ===
-                                  'pending' && (
+                                {status === 'pending' && (
                                   <>
                                     <button
                                       className="btn-sm btn-approve"
                                       onClick={() =>
-                                        handleApprove(
-                                          reg.id
-                                        )
+                                        handleApprove(reg.id)
                                       }
                                       title="Approve"
                                     >
@@ -1802,9 +1780,7 @@ const ManageRegistrations = () => {
                                     <button
                                       className="btn-sm btn-reject"
                                       onClick={() =>
-                                        handleReject(
-                                          reg.id
-                                        )
+                                        handleReject(reg.id)
                                       }
                                       title="Reject"
                                     >
@@ -1813,8 +1789,7 @@ const ManageRegistrations = () => {
                                   </>
                                 )}
 
-                                {status ===
-                                  'approved' && (
+                                {status === 'approved' && (
                                   <>
                                     <button
                                       className="btn-sm btn-attend"
@@ -1843,9 +1818,7 @@ const ManageRegistrations = () => {
                                     <button
                                       className="btn-sm btn-cancel"
                                       onClick={() =>
-                                        handleCancel(
-                                          reg.id
-                                        )
+                                        handleCancel(reg.id)
                                       }
                                       title="Cancel"
                                     >
@@ -1857,12 +1830,8 @@ const ManageRegistrations = () => {
                                 <button
                                   className="btn-sm btn-view"
                                   onClick={() => {
-                                    setSelectedRegistration(
-                                      reg
-                                    );
-                                    setShowDetailsModal(
-                                      true
-                                    );
+                                    setSelectedRegistration(reg);
+                                    setShowDetailsModal(true);
                                   }}
                                   title="View Details"
                                 >
@@ -1917,10 +1886,8 @@ const ManageRegistrations = () => {
 
               <div className="stat-info">
                 <h3>
-                  RWF{' '}
-                  {totalCompleted.toLocaleString()}
+                  RWF {totalCompleted.toLocaleString()}
                 </h3>
-
                 <p>Completed Donations</p>
               </div>
             </div>
@@ -1962,8 +1929,7 @@ const ManageRegistrations = () => {
 
               <div className="stat-info">
                 <h3>
-                  RWF{' '}
-                  {totalDonations.toLocaleString()}
+                  RWF {totalDonations.toLocaleString()}
                 </h3>
 
                 <p>Total Amount</p>
@@ -1989,21 +1955,17 @@ const ManageRegistrations = () => {
               <select
                 value={filterDonationStatus}
                 onChange={e =>
-                  setFilterDonationStatus(
-                    e.target.value
-                  )
+                  setFilterDonationStatus(e.target.value)
                 }
               >
-                {donationStatusOptions.map(
-                  option => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </option>
-                  )
-                )}
+                {donationStatusOptions.map(option => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -2036,10 +1998,7 @@ const ManageRegistrations = () => {
               <tbody>
                 {filteredDonations.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="text-center"
-                    >
+                    <td colSpan="8" className="text-center">
                       No donations found
                     </td>
                   </tr>
@@ -2048,8 +2007,7 @@ const ManageRegistrations = () => {
                     (donation, index) => (
                       <tr
                         key={
-                          donation.id ||
-                          index
+                          donation.id || index
                         }
                       >
                         <td>{index + 1}</td>
@@ -2063,8 +2021,7 @@ const ManageRegistrations = () => {
 
                         <td>
                           {donation.projectName ||
-                            donation.project
-                              ?.title ||
+                            donation.project?.title ||
                             'N/A'}
                         </td>
 
@@ -2125,12 +2082,8 @@ const ManageRegistrations = () => {
                                 )
                                 .map(option => (
                                   <option
-                                    key={
-                                      option.value
-                                    }
-                                    value={
-                                      option.value
-                                    }
+                                    key={option.value}
+                                    value={option.value}
                                   >
                                     {option.label}
                                   </option>
@@ -2185,16 +2138,13 @@ const ManageRegistrations = () => {
               <h3>
                 <i
                   className="fas fa-calendar-check"
-                  style={{
-                    color: '#622599'
-                  }}
+                  style={{ color: '#622599' }}
                 ></i>{' '}
                 Select National Event
               </h3>
 
               <span className="event-count">
-                {safeEvents.length} national events
-                available
+                {safeEvents.length} national events available
               </span>
             </div>
 
@@ -2202,14 +2152,9 @@ const ManageRegistrations = () => {
               {safeEvents.length === 0 ? (
                 <div className="no-events-message">
                   <i className="fas fa-calendar-times"></i>
-
-                  <p>
-                    No national events available
-                  </p>
-
+                  <p>No national events available</p>
                   <small>
-                    Create a national event first
-                    to manage attendance
+                    Create a national event first to manage attendance
                   </small>
                 </div>
               ) : (
@@ -2226,9 +2171,7 @@ const ManageRegistrations = () => {
                     }
                   >
                     <div className="event-card-header">
-                      <h4>
-                        🌍 {event.title}
-                      </h4>
+                      <h4>🌍 {event.title}</h4>
 
                       <span
                         className={`event-status ${
@@ -2257,8 +2200,7 @@ const ManageRegistrations = () => {
                     <div className="event-registration-info">
                       <span className="reg-count">
                         <i className="fas fa-users"></i>{' '}
-                        {event.registrationCount ||
-                          0}{' '}
+                        {event.registrationCount || 0}{' '}
                         registrations
                       </span>
 
@@ -2282,9 +2224,7 @@ const ManageRegistrations = () => {
                   <h3>
                     <i
                       className="fas fa-users"
-                      style={{
-                        color: '#622599'
-                      }}
+                      style={{ color: '#622599' }}
                     ></i>{' '}
                     🌍 {selectedEvent.title} -
                     Attendance Management
@@ -2320,9 +2260,7 @@ const ManageRegistrations = () => {
                         selectedEvent.id
                       )
                     }
-                    disabled={
-                      linkGenerationLoading
-                    }
+                    disabled={linkGenerationLoading}
                   >
                     {linkGenerationLoading ? (
                       <>
@@ -2347,9 +2285,7 @@ const ManageRegistrations = () => {
 
                   <button
                     className="btn-secondary"
-                    onClick={
-                      downloadAttendancePDF
-                    }
+                    onClick={downloadAttendancePDF}
                   >
                     <i className="fas fa-file-pdf"></i>{' '}
                     Export PDF
@@ -2357,7 +2293,6 @@ const ManageRegistrations = () => {
                 </div>
               </div>
 
-              {/* Attendance statistics */}
               <div className="stats-grid">
                 <div className="stat-card">
                   <div className="stat-info">
@@ -2371,8 +2306,7 @@ const ManageRegistrations = () => {
                 <div
                   className="stat-card"
                   style={{
-                    borderLeft:
-                      '4px solid #2E7D32'
+                    borderLeft: '4px solid #2E7D32'
                   }}
                 >
                   <div className="stat-info">
@@ -2381,11 +2315,8 @@ const ManageRegistrations = () => {
                         color: '#2E7D32'
                       }}
                     >
-                      {
-                        attendanceStatsData.present
-                      }
+                      {attendanceStatsData.present}
                     </h3>
-
                     <p>✅ Present</p>
                   </div>
                 </div>
@@ -2393,8 +2324,7 @@ const ManageRegistrations = () => {
                 <div
                   className="stat-card"
                   style={{
-                    borderLeft:
-                      '4px solid #DC3545'
+                    borderLeft: '4px solid #DC3545'
                   }}
                 >
                   <div className="stat-info">
@@ -2405,7 +2335,6 @@ const ManageRegistrations = () => {
                     >
                       {attendanceStatsData.absent}
                     </h3>
-
                     <p>❌ Absent</p>
                   </div>
                 </div>
@@ -2413,8 +2342,7 @@ const ManageRegistrations = () => {
                 <div
                   className="stat-card"
                   style={{
-                    borderLeft:
-                      '4px solid #FFC107'
+                    borderLeft: '4px solid #FFC107'
                   }}
                 >
                   <div className="stat-info">
@@ -2425,7 +2353,6 @@ const ManageRegistrations = () => {
                     >
                       {attendanceStatsData.pending}
                     </h3>
-
                     <p>⏳ Pending</p>
                   </div>
                 </div>
@@ -2433,8 +2360,7 @@ const ManageRegistrations = () => {
                 <div
                   className="stat-card"
                   style={{
-                    borderLeft:
-                      '4px solid #8D6E63'
+                    borderLeft: '4px solid #8D6E63'
                   }}
                 >
                   <div className="stat-info">
@@ -2443,10 +2369,8 @@ const ManageRegistrations = () => {
                         color: '#8D6E63'
                       }}
                     >
-                      {attendanceStatsData.excused ||
-                        0}
+                      {attendanceStatsData.excused || 0}
                     </h3>
-
                     <p>📝 Excused</p>
                   </div>
                 </div>
@@ -2454,8 +2378,7 @@ const ManageRegistrations = () => {
                 <div
                   className="stat-card"
                   style={{
-                    borderLeft:
-                      '4px solid #622599'
+                    borderLeft: '4px solid #622599'
                   }}
                 >
                   <div className="stat-info">
@@ -2466,13 +2389,11 @@ const ManageRegistrations = () => {
                     >
                       {attendanceStatsData.rate}%
                     </h3>
-
                     <p>Attendance Rate</p>
                   </div>
                 </div>
               </div>
 
-              {/* Attendance filters */}
               <div className="search-filter-bar">
                 <div className="filter-box">
                   <select
@@ -2503,8 +2424,7 @@ const ManageRegistrations = () => {
                     <strong>
                       {filteredAttendance.length}
                     </strong>{' '}
-                    of {attendance.length}{' '}
-                    participants
+                    of {attendance.length} participants
                   </span>
                 </div>
 
@@ -2524,7 +2444,6 @@ const ManageRegistrations = () => {
                 </div>
               </div>
 
-              {/* Attendance table */}
               <div className="table-container">
                 <table className="data-table">
                   <thead>
@@ -2542,28 +2461,23 @@ const ManageRegistrations = () => {
                   </thead>
 
                   <tbody>
-                    {filteredAttendance.length ===
-                    0 ? (
+                    {filteredAttendance.length === 0 ? (
                       <tr>
                         <td
                           colSpan="9"
                           className="text-center"
                         >
-                          No attendance records
-                          found
+                          No attendance records found
                         </td>
                       </tr>
                     ) : (
                       filteredAttendance.map(
                         (record, index) => {
                           const memberId =
-                            getAttendanceMemberId(
-                              record
-                            );
+                            getAttendanceMemberId(record);
 
                           const status =
-                            record.status ||
-                            'pending';
+                            record.status || 'pending';
 
                           return (
                             <tr
@@ -2585,18 +2499,15 @@ const ManageRegistrations = () => {
                               </td>
 
                               <td>
-                                {record.sin ||
-                                  'N/A'}
+                                {record.sin || 'N/A'}
                               </td>
 
                               <td>
-                                {record.email ||
-                                  'N/A'}
+                                {record.email || 'N/A'}
                               </td>
 
                               <td>
-                                {record.district ||
-                                  'N/A'}
+                                {record.district || 'N/A'}
                               </td>
 
                               <td>
@@ -2605,9 +2516,7 @@ const ManageRegistrations = () => {
                                     status
                                   )}`}
                                 >
-                                  {getStatusIcon(
-                                    status
-                                  )}{' '}
+                                  {getStatusIcon(status)}{' '}
                                   {status}
                                 </span>
                               </td>
@@ -2646,8 +2555,7 @@ const ManageRegistrations = () => {
 
                               <td>
                                 <div className="action-buttons">
-                                  {status !==
-                                    'present' && (
+                                  {status !== 'present' && (
                                     <button
                                       className="btn-sm btn-approve"
                                       onClick={() =>
@@ -2666,10 +2574,8 @@ const ManageRegistrations = () => {
                                     </button>
                                   )}
 
-                                  {status !==
-                                    'absent' &&
-                                    status !==
-                                      'present' && (
+                                  {status !== 'absent' &&
+                                    status !== 'present' && (
                                       <button
                                         className="btn-sm btn-reject"
                                         onClick={() =>
@@ -2710,7 +2616,6 @@ const ManageRegistrations = () => {
                 </table>
               </div>
 
-              {/* Attendance summary */}
               <div className="attendance-summary">
                 <div className="summary-item">
                   <span className="summary-label">
@@ -2758,8 +2663,7 @@ const ManageRegistrations = () => {
                   </span>
 
                   <span className="summary-value">
-                    {attendanceStatsData.excused ||
-                      0}
+                    {attendanceStatsData.excused || 0}
                   </span>
                 </div>
 
@@ -2799,9 +2703,7 @@ const ManageRegistrations = () => {
                 <h3>
                   <i
                     className="fas fa-info-circle"
-                    style={{
-                      color: '#622599'
-                    }}
+                    style={{ color: '#622599' }}
                   ></i>{' '}
                   Registration Details
                 </h3>
@@ -2819,9 +2721,7 @@ const ManageRegistrations = () => {
               <div className="modal-body">
                 <div className="detail-grid">
                   <div className="detail-item">
-                    <strong>
-                      Event/Training:
-                    </strong>
+                    <strong>Event/Training:</strong>
 
                     <span>
                       {selectedRegistration.eventName ||
@@ -2834,8 +2734,7 @@ const ManageRegistrations = () => {
                     <strong>Type:</strong>
 
                     <span>
-                      {selectedRegistration.type ||
-                        'N/A'}
+                      {selectedRegistration.type || 'N/A'}
                     </span>
                   </div>
 
@@ -2853,8 +2752,7 @@ const ManageRegistrations = () => {
                     <strong>SIN:</strong>
 
                     <span>
-                      {selectedRegistration.sin ||
-                        'N/A'}
+                      {selectedRegistration.sin || 'N/A'}
                     </span>
                   </div>
 
@@ -2862,8 +2760,7 @@ const ManageRegistrations = () => {
                     <strong>Email:</strong>
 
                     <span>
-                      {selectedRegistration.email ||
-                        'N/A'}
+                      {selectedRegistration.email || 'N/A'}
                     </span>
                   </div>
 
@@ -2871,8 +2768,7 @@ const ManageRegistrations = () => {
                     <strong>Phone:</strong>
 
                     <span>
-                      {selectedRegistration.phone ||
-                        'N/A'}
+                      {selectedRegistration.phone || 'N/A'}
                     </span>
                   </div>
 
@@ -2880,15 +2776,12 @@ const ManageRegistrations = () => {
                     <strong>District:</strong>
 
                     <span>
-                      {selectedRegistration.district ||
-                        'N/A'}
+                      {selectedRegistration.district || 'N/A'}
                     </span>
                   </div>
 
                   <div className="detail-item">
-                    <strong>
-                      Registration Date:
-                    </strong>
+                    <strong>Registration Date:</strong>
 
                     <span>
                       {formatDateTime(
@@ -2909,16 +2802,13 @@ const ManageRegistrations = () => {
                       {getStatusIcon(
                         selectedRegistration.status
                       )}{' '}
-                      {selectedRegistration.status ||
-                        'pending'}
+                      {selectedRegistration.status || 'pending'}
                     </span>
                   </div>
 
                   {selectedRegistration.paymentStatus && (
                     <div className="detail-item">
-                      <strong>
-                        Payment Status:
-                      </strong>
+                      <strong>Payment Status:</strong>
 
                       <span
                         className={`payment-badge ${
@@ -2928,9 +2818,7 @@ const ManageRegistrations = () => {
                             : 'payment-pending'
                         }`}
                       >
-                        {
-                          selectedRegistration.paymentStatus
-                        }
+                        {selectedRegistration.paymentStatus}
                       </span>
                     </div>
                   )}
@@ -2948,8 +2836,7 @@ const ManageRegistrations = () => {
               </div>
 
               <div className="form-actions">
-                {selectedRegistration.status ===
-                  'pending' && (
+                {selectedRegistration.status === 'pending' && (
                   <>
                     <button
                       className="btn-approve"
@@ -2958,9 +2845,7 @@ const ManageRegistrations = () => {
                           selectedRegistration.id
                         );
 
-                        setShowDetailsModal(
-                          false
-                        );
+                        setShowDetailsModal(false);
                       }}
                     >
                       <i className="fas fa-check"></i>{' '}
@@ -2974,9 +2859,7 @@ const ManageRegistrations = () => {
                           selectedRegistration.id
                         );
 
-                        setShowDetailsModal(
-                          false
-                        );
+                        setShowDetailsModal(false);
                       }}
                     >
                       <i className="fas fa-times"></i>{' '}
@@ -2985,8 +2868,7 @@ const ManageRegistrations = () => {
                   </>
                 )}
 
-                {selectedRegistration.status ===
-                  'approved' && (
+                {selectedRegistration.status === 'approved' && (
                   <>
                     <button
                       className="btn-attend"
@@ -2995,9 +2877,7 @@ const ManageRegistrations = () => {
                           selectedRegistration.id
                         );
 
-                        setShowDetailsModal(
-                          false
-                        );
+                        setShowDetailsModal(false);
                       }}
                     >
                       <i className="fas fa-user-check"></i>{' '}
@@ -3011,9 +2891,7 @@ const ManageRegistrations = () => {
                           selectedRegistration.id
                         );
 
-                        setShowDetailsModal(
-                          false
-                        );
+                        setShowDetailsModal(false);
                       }}
                     >
                       <i className="fas fa-certificate"></i>{' '}
@@ -3043,9 +2921,7 @@ const ManageRegistrations = () => {
           <div
             className="modal-overlay"
             onClick={() =>
-              setShowDonationDetailsModal(
-                false
-              )
+              setShowDonationDetailsModal(false)
             }
           >
             <div
@@ -3058,9 +2934,7 @@ const ManageRegistrations = () => {
                 <h3>
                   <i
                     className="fas fa-info-circle"
-                    style={{
-                      color: '#622599'
-                    }}
+                    style={{ color: '#622599' }}
                   ></i>{' '}
                   Donation Details
                 </h3>
@@ -3068,9 +2942,7 @@ const ManageRegistrations = () => {
                 <button
                   className="modal-close"
                   onClick={() =>
-                    setShowDonationDetailsModal(
-                      false
-                    )
+                    setShowDonationDetailsModal(false)
                   }
                 >
                   <i className="fas fa-times"></i>
@@ -3095,8 +2967,7 @@ const ManageRegistrations = () => {
 
                     <span>
                       {selectedDonation.projectName ||
-                        selectedDonation.project
-                          ?.title ||
+                        selectedDonation.project?.title ||
                         'N/A'}
                     </span>
                   </div>
@@ -3115,9 +2986,7 @@ const ManageRegistrations = () => {
                   </div>
 
                   <div className="detail-item">
-                    <strong>
-                      Payment Method:
-                    </strong>
+                    <strong>Payment Method:</strong>
 
                     <span>
                       {selectedDonation.paymentMethod ||
@@ -3136,8 +3005,7 @@ const ManageRegistrations = () => {
                       {getStatusIcon(
                         selectedDonation.status
                       )}{' '}
-                      {selectedDonation.status ||
-                        'pending'}
+                      {selectedDonation.status || 'pending'}
                     </span>
                   </div>
 
@@ -3187,8 +3055,7 @@ const ManageRegistrations = () => {
                 <select
                   className="btn-status"
                   value={
-                    selectedDonation.status ||
-                    'pending'
+                    selectedDonation.status || 'pending'
                   }
                   onChange={e => {
                     handleUpdateDonationStatus(
@@ -3196,15 +3063,12 @@ const ManageRegistrations = () => {
                       e.target.value
                     );
 
-                    setShowDonationDetailsModal(
-                      false
-                    );
+                    setShowDonationDetailsModal(false);
                   }}
                 >
                   {donationStatusOptions
                     .filter(
-                      option =>
-                        option.value !== 'all'
+                      option => option.value !== 'all'
                     )
                     .map(option => (
                       <option
@@ -3219,9 +3083,7 @@ const ManageRegistrations = () => {
                 <button
                   className="btn-secondary"
                   onClick={() =>
-                    setShowDonationDetailsModal(
-                      false
-                    )
+                    setShowDonationDetailsModal(false)
                   }
                 >
                   Close
@@ -3251,9 +3113,7 @@ const ManageRegistrations = () => {
               <h3>
                 <i
                   className="fas fa-hand-holding-heart"
-                  style={{
-                    color: '#622599'
-                  }}
+                  style={{ color: '#622599' }}
                 ></i>{' '}
                 Add Donation
               </h3>
@@ -3261,9 +3121,7 @@ const ManageRegistrations = () => {
               <button
                 className="modal-close"
                 onClick={() =>
-                  setShowAddDonationModal(
-                    false
-                  )
+                  setShowAddDonationModal(false)
                 }
               >
                 <i className="fas fa-times"></i>
@@ -3275,20 +3133,15 @@ const ManageRegistrations = () => {
                 <div className="form-group">
                   <label>
                     Project{' '}
-                    <span className="required">
-                      *
-                    </span>
+                    <span className="required">*</span>
                   </label>
 
                   <select
-                    value={
-                      donationFormData.projectId
-                    }
+                    value={donationFormData.projectId}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        projectId:
-                          e.target.value
+                        projectId: e.target.value
                       })
                     }
                     required
@@ -3315,21 +3168,16 @@ const ManageRegistrations = () => {
                 <div className="form-group">
                   <label>
                     Amount (RWF){' '}
-                    <span className="required">
-                      *
-                    </span>
+                    <span className="required">*</span>
                   </label>
 
                   <input
                     type="number"
-                    value={
-                      donationFormData.amount
-                    }
+                    value={donationFormData.amount}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        amount:
-                          e.target.value
+                        amount: e.target.value
                       })
                     }
                     required
@@ -3340,40 +3188,30 @@ const ManageRegistrations = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    Donor Name
-                  </label>
+                  <label>Donor Name</label>
 
                   <input
                     type="text"
-                    value={
-                      donationFormData.donorName
-                    }
+                    value={donationFormData.donorName}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        donorName:
-                          e.target.value
+                        donorName: e.target.value
                       })
                     }
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    Donor Email
-                  </label>
+                  <label>Donor Email</label>
 
                   <input
                     type="email"
-                    value={
-                      donationFormData.donorEmail
-                    }
+                    value={donationFormData.donorEmail}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        donorEmail:
-                          e.target.value
+                        donorEmail: e.target.value
                       })
                     }
                   />
@@ -3382,70 +3220,53 @@ const ManageRegistrations = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    Donor Phone
-                  </label>
+                  <label>Donor Phone</label>
 
                   <input
                     type="tel"
-                    value={
-                      donationFormData.donorPhone
-                    }
+                    value={donationFormData.donorPhone}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        donorPhone:
-                          e.target.value
+                        donorPhone: e.target.value
                       })
                     }
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    Payment Method
-                  </label>
+                  <label>Payment Method</label>
 
                   <select
-                    value={
-                      donationFormData.paymentMethod
-                    }
+                    value={donationFormData.paymentMethod}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        paymentMethod:
-                          e.target.value
+                        paymentMethod: e.target.value
                       })
                     }
                   >
-                    {paymentMethods.map(
-                      method => (
-                        <option
-                          key={method.value}
-                          value={method.value}
-                        >
-                          {method.label}
-                        </option>
-                      )
-                    )}
+                    {paymentMethods.map(method => (
+                      <option
+                        key={method.value}
+                        value={method.value}
+                      >
+                        {method.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>
-                  Message
-                </label>
+                <label>Message</label>
 
                 <textarea
-                  value={
-                    donationFormData.message
-                  }
+                  value={donationFormData.message}
                   onChange={e =>
                     setDonationFormData({
                       ...donationFormData,
-                      message:
-                        e.target.value
+                      message: e.target.value
                     })
                   }
                   rows="3"
@@ -3457,14 +3278,11 @@ const ManageRegistrations = () => {
                 <label>
                   <input
                     type="checkbox"
-                    checked={
-                      donationFormData.isAnonymous
-                    }
+                    checked={donationFormData.isAnonymous}
                     onChange={e =>
                       setDonationFormData({
                         ...donationFormData,
-                        isAnonymous:
-                          e.target.checked
+                        isAnonymous: e.target.checked
                       })
                     }
                   />{' '}
@@ -3477,9 +3295,7 @@ const ManageRegistrations = () => {
                   type="button"
                   className="btn-secondary"
                   onClick={() =>
-                    setShowAddDonationModal(
-                      false
-                    )
+                    setShowAddDonationModal(false)
                   }
                 >
                   Cancel
@@ -3518,9 +3334,7 @@ const ManageRegistrations = () => {
               <h3>
                 <i
                   className="fas fa-link"
-                  style={{
-                    color: '#622599'
-                  }}
+                  style={{ color: '#622599' }}
                 ></i>{' '}
                 Attendance Link
               </h3>
@@ -3549,25 +3363,16 @@ const ManageRegistrations = () => {
                 />
               </div>
 
-              {/* ======================================
-                  NOTIFICATION INFORMATION
-                  ====================================== */}
               {notificationCount > 0 && (
                 <div className="notification-info">
                   <i
                     className="fas fa-bell"
-                    style={{
-                      color: '#622599'
-                    }}
+                    style={{ color: '#622599' }}
                   ></i>
 
                   <span>
-                    🔔{' '}
-                    <strong>
-                      {notificationCount}
-                    </strong>{' '}
-                    notification(s) sent to
-                    registered users
+                    🔔 <strong>{notificationCount}</strong>{' '}
+                    notification(s) sent to registered users
                   </span>
                 </div>
               )}
@@ -3599,18 +3404,15 @@ const ManageRegistrations = () => {
                   </li>
 
                   <li>
-                    Enter their email or SIN to
-                    verify their identity
+                    Enter their email or SIN to verify their identity
                   </li>
 
                   <li>
-                    Click "Check In" to mark
-                    themselves as present
+                    Click "Check In" to mark themselves as present
                   </li>
 
                   <li>
-                    Each participant can only check
-                    in once
+                    Each participant can only check in once
                   </li>
                 </ul>
               </div>
@@ -3650,9 +3452,7 @@ const ManageRegistrations = () => {
               <h3>
                 <i
                   className="fas fa-user"
-                  style={{
-                    color: '#622599'
-                  }}
+                  style={{ color: '#622599' }}
                 ></i>{' '}
                 Participant Details
               </h3>
@@ -3660,9 +3460,7 @@ const ManageRegistrations = () => {
               <button
                 className="modal-close"
                 onClick={() =>
-                  setSelectedMemberForCheckIn(
-                    null
-                  )
+                  setSelectedMemberForCheckIn(null)
                 }
               >
                 <i className="fas fa-times"></i>
@@ -3686,8 +3484,7 @@ const ManageRegistrations = () => {
                   <strong>SIN:</strong>
 
                   <span>
-                    {selectedMemberForCheckIn.sin ||
-                      'N/A'}
+                    {selectedMemberForCheckIn.sin || 'N/A'}
                   </span>
                 </div>
 
@@ -3695,8 +3492,7 @@ const ManageRegistrations = () => {
                   <strong>Email:</strong>
 
                   <span>
-                    {selectedMemberForCheckIn.email ||
-                      'N/A'}
+                    {selectedMemberForCheckIn.email || 'N/A'}
                   </span>
                 </div>
 
@@ -3704,8 +3500,7 @@ const ManageRegistrations = () => {
                   <strong>Phone:</strong>
 
                   <span>
-                    {selectedMemberForCheckIn.phone ||
-                      'N/A'}
+                    {selectedMemberForCheckIn.phone || 'N/A'}
                   </span>
                 </div>
 
@@ -3713,8 +3508,7 @@ const ManageRegistrations = () => {
                   <strong>District:</strong>
 
                   <span>
-                    {selectedMemberForCheckIn.district ||
-                      'N/A'}
+                    {selectedMemberForCheckIn.district || 'N/A'}
                   </span>
                 </div>
 
@@ -3729,15 +3523,12 @@ const ManageRegistrations = () => {
                     {getStatusIcon(
                       selectedMemberForCheckIn.status
                     )}{' '}
-                    {selectedMemberForCheckIn.status ||
-                      'pending'}
+                    {selectedMemberForCheckIn.status || 'pending'}
                   </span>
                 </div>
 
                 <div className="detail-item">
-                  <strong>
-                    Check-in Time:
-                  </strong>
+                  <strong>Check-in Time:</strong>
 
                   <span>
                     {selectedMemberForCheckIn.attendanceTime
@@ -3753,9 +3544,7 @@ const ManageRegistrations = () => {
                 </div>
 
                 <div className="detail-item">
-                  <strong>
-                    Check-in Method:
-                  </strong>
+                  <strong>Check-in Method:</strong>
 
                   <span>
                     {selectedMemberForCheckIn.checkedInBy ===
@@ -3774,9 +3563,7 @@ const ManageRegistrations = () => {
               <button
                 className="btn-secondary"
                 onClick={() =>
-                  setSelectedMemberForCheckIn(
-                    null
-                  )
+                  setSelectedMemberForCheckIn(null)
                 }
               >
                 Close
@@ -3785,6 +3572,774 @@ const ManageRegistrations = () => {
           </div>
         </div>
       )}
+
+      {/* ============================================
+          RESPONSIVE CSS ONLY
+          ============================================ */}
+      <style jsx>{`
+        .dashboard-container {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow-x: hidden;
+        }
+
+        .dashboard-container *,
+        .dashboard-container *::before,
+        .dashboard-container *::after {
+          box-sizing: border-box;
+        }
+
+        .page-header {
+          width: 100%;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+
+        .page-header > div:first-child {
+          min-width: 0;
+          flex: 1 1 400px;
+        }
+
+        .page-header h2,
+        .page-header p {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .alert {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          overflow-wrap: anywhere;
+        }
+
+        .alert > div {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .alert-close {
+          flex: 0 0 auto;
+        }
+
+        .tabs-container {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .tab-btn {
+          min-width: 0;
+          white-space: nowrap;
+        }
+
+        .stats-grid {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(180px, 1fr)
+          );
+          gap: 16px;
+        }
+
+        .stat-card {
+          min-width: 0;
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .stat-info {
+          min-width: 0;
+        }
+
+        .stat-info h3,
+        .stat-info p {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .search-filter-bar {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .search-box {
+          min-width: 180px;
+          flex: 1 1 280px;
+          max-width: 100%;
+        }
+
+        .search-box input {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .filter-box {
+          min-width: 160px;
+          max-width: 100%;
+          flex: 0 1 220px;
+        }
+
+        .filter-box select {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .stats-info {
+          min-width: 0;
+          flex: 0 1 auto;
+          overflow-wrap: anywhere;
+        }
+
+        .table-container {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+
+        .table-container .data-table {
+          width: max-content;
+          min-width: 100%;
+        }
+
+        .data-table th,
+        .data-table td {
+          white-space: nowrap;
+        }
+
+        .action-buttons {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          min-width: max-content;
+        }
+
+        .btn-sm {
+          flex: 0 0 auto;
+        }
+
+        .event-selector,
+        .attendance-controls {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .event-selector-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          flex-wrap: wrap;
+        }
+
+        .event-selector-header h3,
+        .event-count {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .event-grid {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(240px, 1fr)
+          );
+          gap: 16px;
+        }
+
+        .event-card {
+          min-width: 0;
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .event-card-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .event-card-header h4,
+        .event-date,
+        .event-location,
+        .event-registration-info {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .event-card-header h4 {
+          min-width: 0;
+        }
+
+        .event-status {
+          flex: 0 0 auto;
+        }
+
+        .event-registration-info {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .controls-header {
+          width: 100%;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+
+        .controls-header > div:first-child {
+          min-width: 0;
+          flex: 1 1 400px;
+        }
+
+        .controls-header h3 {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .event-details {
+          display: flex;
+          gap: 15px;
+          flex-wrap: wrap;
+          overflow-wrap: anywhere;
+        }
+
+        .controls-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .attendance-summary {
+          width: 100%;
+          max-width: 100%;
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .summary-item {
+          min-width: 120px;
+          flex: 1 1 120px;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          max-width: 100vw;
+          max-height: 100vh;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-content {
+          width: min(700px, 100%);
+          max-width: 100%;
+          min-width: 0;
+          max-height: calc(100vh - 40px);
+          overflow-x: hidden;
+          overflow-y: auto;
+          margin: auto;
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .modal-header h3 {
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .modal-close {
+          flex: 0 0 auto;
+        }
+
+        .modal-body {
+          min-width: 0;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+        }
+
+        .detail-grid {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: grid;
+          grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+          );
+          gap: 15px;
+        }
+
+        .detail-item {
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .detail-item span {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .detail-item.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .form-row {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: grid;
+          grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+          );
+          gap: 15px;
+        }
+
+        .form-group {
+          min-width: 0;
+          width: 100%;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .form-actions {
+          width: 100%;
+          max-width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .link-container,
+        .notification-info,
+        .link-instructions {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .link-input {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .qr-code-container {
+          width: 100%;
+          max-width: 100%;
+          text-align: center;
+          overflow: hidden;
+        }
+
+        .qr-code-image {
+          display: block;
+          max-width: min(100%, 280px);
+          height: auto;
+          margin: 15px auto;
+        }
+
+        .link-instructions ul {
+          padding-left: 20px;
+        }
+
+        /* ============================================
+           TABLET
+           ============================================ */
+
+        @media (max-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(
+              3,
+              minmax(0, 1fr)
+            );
+          }
+
+          .event-grid {
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+          }
+
+          .controls-actions {
+            width: 100%;
+            justify-content: flex-start;
+          }
+        }
+
+        /* ============================================
+           SMALL TABLET / LARGE PHONE
+           ============================================ */
+
+        @media (max-width: 768px) {
+          .dashboard-container {
+            padding-left: 12px;
+            padding-right: 12px;
+          }
+
+          .page-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .page-header > div:first-child {
+            width: 100%;
+            flex-basis: auto;
+          }
+
+          .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+          }
+
+          .header-actions button {
+            flex: 1 1 180px;
+          }
+
+          .tabs-container {
+            display: grid;
+            grid-template-columns: repeat(
+              3,
+              minmax(0, 1fr)
+            );
+          }
+
+          .tab-btn {
+            width: 100%;
+            white-space: normal;
+            min-height: 48px;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+            gap: 12px;
+          }
+
+          .search-filter-bar {
+            display: grid;
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+          }
+
+          .search-box {
+            width: 100%;
+            min-width: 0;
+            grid-column: 1 / -1;
+          }
+
+          .filter-box {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+          }
+
+          .stats-info {
+            width: 100%;
+          }
+
+          .event-grid {
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+          }
+
+          .controls-header {
+            flex-direction: column;
+          }
+
+          .controls-header > div:first-child {
+            width: 100%;
+            flex-basis: auto;
+          }
+
+          .controls-actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+          }
+
+          .controls-actions button {
+            width: 100%;
+            min-width: 0;
+          }
+
+          .detail-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .detail-item.full-width {
+            grid-column: auto;
+          }
+
+          .form-row {
+            grid-template-columns: 1fr;
+          }
+
+          .form-actions {
+            justify-content: stretch;
+          }
+
+          .form-actions button,
+          .form-actions select {
+            flex: 1 1 150px;
+          }
+
+          .attendance-summary {
+            display: grid;
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            );
+          }
+
+          .summary-item {
+            min-width: 0;
+          }
+
+          .modal-overlay {
+            padding: 12px;
+            align-items: flex-start;
+          }
+
+          .modal-content {
+            width: 100%;
+            max-width: 100%;
+            max-height: calc(100vh - 24px);
+          }
+        }
+
+        /* ============================================
+           MOBILE
+           ============================================ */
+
+        @media (max-width: 600px) {
+          .dashboard-container {
+            padding-left: 10px;
+            padding-right: 10px;
+          }
+
+          .page-header h2 {
+            font-size: 1.25rem;
+            line-height: 1.35;
+          }
+
+          .page-header p {
+            font-size: 0.9rem;
+          }
+
+          .header-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            width: 100%;
+          }
+
+          .header-actions button {
+            width: 100%;
+            flex: none;
+          }
+
+          .tabs-container {
+            grid-template-columns: 1fr;
+          }
+
+          .tab-btn {
+            width: 100%;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .search-filter-bar {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+
+          .search-box,
+          .filter-box,
+          .stats-info {
+            grid-column: auto;
+            width: 100%;
+          }
+
+          .event-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .controls-actions {
+            grid-template-columns: 1fr;
+          }
+
+          .controls-actions button {
+            width: 100%;
+          }
+
+          .attendance-summary {
+            grid-template-columns: 1fr;
+          }
+
+          .summary-item {
+            width: 100%;
+          }
+
+          .modal-overlay {
+            padding: 8px;
+          }
+
+          .modal-content {
+            max-height: calc(100vh - 16px);
+            border-radius: 10px;
+          }
+
+          .modal-header {
+            align-items: flex-start;
+          }
+
+          .modal-header h3 {
+            font-size: 1.05rem;
+          }
+
+          .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .form-actions button,
+          .form-actions select {
+            width: 100%;
+            flex: none;
+          }
+
+          .data-table {
+            min-width: 950px;
+          }
+
+          .event-details {
+            flex-direction: column;
+            gap: 8px;
+          }
+        }
+
+        /* ============================================
+           VERY SMALL PHONES
+           ============================================ */
+
+        @media (max-width: 400px) {
+          .dashboard-container {
+            padding-left: 8px;
+            padding-right: 8px;
+          }
+
+          .stats-grid {
+            gap: 10px;
+          }
+
+          .stat-card {
+            padding: 12px;
+          }
+
+          .stat-info h3 {
+            font-size: 1.2rem;
+          }
+
+          .stat-info p {
+            font-size: 0.8rem;
+          }
+
+          .event-card {
+            padding: 12px;
+          }
+
+          .modal-content {
+            border-radius: 8px;
+          }
+
+          .data-table {
+            min-width: 900px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -2653,489 +2653,885 @@ const ManageLeaders = () => {
           COMPONENT CSS
       =================================================== */}
 
-      <style jsx>{`
-        .permission-warning {
-          margin-top: 8px;
-          padding: 8px 12px;
-          background: #fff5f5;
-          border: 1px solid #fed7d7;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .super-admin-badge {
-          margin-left: 12px;
-          background: #ffd100;
-          padding: 2px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: bold;
-        }
-
-        .super-badge {
-          margin-left: 8px;
-          background: #ffd100;
-          color: #111827;
-          padding: 1px 8px;
-          border-radius: 10px;
-          font-size: 10px;
-          font-weight: bold;
-          white-space: nowrap;
-        }
-
-        .read-only-badge {
-          font-size: 12px;
-          color: #999;
-          padding: 4px 8px;
-          background: #f3f4f6;
-          border-radius: 4px;
-          white-space: nowrap;
-        }
-
-        .role-select {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          font-size: 14px;
-          box-sizing: border-box;
-        }
-
-        .permissions-modules {
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-          margin-top: 8px;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          overflow: hidden;
-        }
-
-        .permission-module {
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .permission-module:last-child {
-          border-bottom: none;
-        }
-
-        .module-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 14px;
-          background: #f9fafb;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-
-        .module-header:hover {
-          background: #f3f4f6;
-        }
-
-        .module-title {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
-          font-weight: 500;
-          flex-wrap: wrap;
-        }
-
-        .module-title > i {
-          color: #ffd100;
-          width: 18px;
-          min-width: 18px;
-          text-align: center;
-        }
-
-        .module-title > span {
-          min-width: 0;
-        }
-
-        .permission-key {
-          font-size: 10px;
-          color: #6b7280;
-          background: #eef2ff;
-          border: 1px solid #e0e7ff;
-          padding: 2px 6px;
-          border-radius: 5px;
-          font-family: monospace;
-          white-space: nowrap;
-        }
-
-        .action-count {
-          font-size: 12px;
-          font-weight: normal;
-          color: #6b7280;
-          background: #e5e7eb;
-          padding: 2px 8px;
-          border-radius: 10px;
-          white-space: nowrap;
-        }
-
-        .module-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-shrink: 0;
-        }
-
-        .select-all-label {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 12px;
-          font-weight: normal;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .module-actions-grid {
-          display: grid;
-          grid-template-columns: repeat(
-            auto-fill,
-            minmax(140px, 1fr)
-          );
-          gap: 6px;
-          padding: 10px 14px;
-          background: #ffffff;
-        }
-
-        .action-checkbox {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          cursor: pointer;
-          padding: 5px 6px;
-          border-radius: 4px;
-          transition: background 0.2s ease;
-        }
-
-        .action-checkbox:hover {
-          background: #f3f4f6;
-        }
-
-        .action-checkbox input[type='checkbox'] {
-          width: 15px;
-          height: 15px;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-
-        .action-label {
-          text-transform: capitalize;
-        }
-
-        .permission-summary {
-          font-size: 12px;
-          min-width: 180px;
-          max-width: 260px;
-        }
-
-        .permission-count {
-          font-weight: 500;
-          color: #374151;
-        }
-
-        .permission-detail {
-          font-size: 11px;
-          color: #6b7280;
-          display: block;
-          max-width: 260px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          margin-top: 2px;
-        }
-
-        .form-hint {
-          display: block;
-          margin-top: 4px;
-          font-size: 12px;
-          color: #6b7280;
-          line-height: 1.45;
-        }
-
-        .form-hint i {
-          margin-right: 4px;
-        }
-
-        .districts-grid {
-          display: grid;
-          grid-template-columns: repeat(
-            auto-fill,
-            minmax(150px, 1fr)
-          );
-          gap: 6px;
-          margin-top: 8px;
-          max-height: 200px;
-          overflow-y: auto;
-          padding: 4px;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-        }
-
-        .district-checkbox {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          cursor: pointer;
-          padding: 5px 6px;
-          border-radius: 4px;
-          transition: background 0.2s ease;
-        }
-
-        .district-checkbox:hover {
-          background: #f3f4f6;
-        }
-
-        .district-checkbox.select-all {
-          grid-column: 1 / -1;
-          font-weight: 500;
-          color: #6a1b9a;
-          border-bottom: 1px solid #e5e7eb;
-          padding-bottom: 8px;
-          margin-bottom: 4px;
-        }
-
-        .district-checkbox input[type='checkbox'] {
-          width: 15px;
-          height: 15px;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .modal-large {
-          max-width: 800px;
-        }
-
-        .required {
-          color: #ef4444;
-        }
-
-        .text-center {
-          text-align: center;
-        }
-
-        .district-info {
-          min-width: 120px;
-        }
-
-        .district-name {
-          display: block;
-        }
-
-        .assigned-districts-small {
-          display: block;
-          margin-top: 3px;
-          font-size: 10px;
-          color: #6b7280;
-          line-height: 1.3;
-        }
-
-        /* =====================================================
-           MODAL SAFETY / SCROLLING
-        ===================================================== */
-
-        .modal-overlay {
-          overflow-y: auto;
-          padding: 20px;
-          box-sizing: border-box;
-        }
-
-        .modal-content.modal-large {
-          width: min(800px, 100%);
-          max-width: 800px;
-          max-height: calc(100vh - 40px);
-          overflow-y: auto;
-          box-sizing: border-box;
-        }
-
-        /* =====================================================
-           TABLE SAFETY
-        ===================================================== */
-
-        .table-container {
-          width: 100%;
-          max-width: 100%;
-          overflow-x: auto;
-          overflow-y: visible;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .table-container .data-table {
-          min-width: 1050px;
-        }
-
-        /* =====================================================
-           MOBILE
-        ===================================================== */
-
-        @media (max-width: 768px) {
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-
-          .module-header {
-            align-items: flex-start;
-            padding: 10px 10px;
-          }
-
-          .module-title {
-            gap: 7px;
-            flex-wrap: wrap;
-          }
-
-          .module-actions {
-            gap: 7px;
-          }
-
-          .module-actions-grid {
-            grid-template-columns: 1fr 1fr;
-            padding: 9px 10px;
-          }
-
-          .districts-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .modal-overlay {
-            padding: 10px;
-            align-items: flex-start;
-          }
-
-          .modal-content.modal-large {
-            width: 100%;
-            max-width: 100%;
-            max-height: calc(100vh - 20px);
-            margin: 0;
-          }
-
-          .permission-summary {
-            min-width: 150px;
-          }
-
-          .permission-detail {
-            max-width: 190px;
-          }
-
-          .action-count {
-            font-size: 10px;
-          }
-
-          .select-all-label {
-            font-size: 11px;
-          }
-
-          .permission-key {
-            font-size: 9px;
-          }
-        }
-
-        /* =====================================================
-           SMALL MOBILE
-        ===================================================== */
-
-        @media (max-width: 480px) {
-          .module-header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .module-actions {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .module-actions-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .districts-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .district-checkbox.select-all {
-            grid-column: auto;
-          }
-
-          .permission-summary {
-            min-width: 130px;
-          }
-
-          .permission-key {
-            width: fit-content;
-          }
-        }
-
-        /* =====================================================
-           VERY SMALL MOBILE
-        ===================================================== */
-
-        @media (max-width: 360px) {
-          .module-title {
-            font-size: 13px;
-          }
-
-          .module-actions-grid {
-            padding: 8px;
-          }
-
-          .action-checkbox {
-            font-size: 12px;
-          }
-
-          .district-checkbox {
-            font-size: 12px;
-          }
-
-          .permission-key {
-            display: none;
-          }
-        }
-
-        /* =====================================================
-           TABLET
-        ===================================================== */
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .module-actions-grid {
-            grid-template-columns: repeat(
-              2,
-              minmax(120px, 1fr)
-            );
-          }
-
-          .modal-content.modal-large {
-            max-width: 90%;
-          }
-        }
-
-        /* =====================================================
-           LARGE DESKTOP
-        ===================================================== */
-
-        @media (min-width: 1400px) {
-          .module-actions-grid {
-            grid-template-columns: repeat(
-              auto-fill,
-              minmax(150px, 1fr)
-            );
-          }
-        }
-      `}</style>
+    <style jsx>{`
+  /* =====================================================
+     PERMISSION WARNING
+  ===================================================== */
+
+  .permission-warning {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .super-admin-badge {
+    margin-left: 12px;
+    background: #ffd100;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .super-badge {
+    margin-left: 8px;
+    background: #ffd100;
+    color: #111827;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .read-only-badge {
+    font-size: 12px;
+    color: #999;
+    padding: 4px 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* =====================================================
+     FORM SELECTS
+  ===================================================== */
+
+  .role-select,
+  .district-select {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  /* =====================================================
+     PERMISSIONS
+  ===================================================== */
+
+  .permissions-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .permission-module {
+    border-bottom: 1px solid #e5e7eb;
+    min-width: 0;
+  }
+
+  .permission-module:last-child {
+    border-bottom: none;
+  }
+
+  .module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .module-header:hover {
+    background: #f3f4f6;
+  }
+
+  .module-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+    font-weight: 500;
+    flex-wrap: wrap;
+  }
+
+  .module-title > i {
+    color: #ffd100;
+    width: 18px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .module-title > span {
+    min-width: 0;
+  }
+
+  .permission-key {
+    font-size: 10px;
+    color: #6b7280;
+    background: #eef2ff;
+    border: 1px solid #e0e7ff;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: monospace;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .action-count {
+    font-size: 12px;
+    font-weight: normal;
+    color: #6b7280;
+    background: #e5e7eb;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .module-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: normal;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .module-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(140px, 1fr)
+    );
+    gap: 6px;
+    padding: 10px 14px;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+
+  .action-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+    min-width: 0;
+  }
+
+  .action-checkbox:hover {
+    background: #f3f4f6;
+  }
+
+  .action-checkbox input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .action-label {
+    text-transform: capitalize;
+    overflow-wrap: anywhere;
+  }
+
+  /* =====================================================
+     PERMISSION SUMMARY
+  ===================================================== */
+
+  .permission-summary {
+    font-size: 12px;
+    min-width: 160px;
+    max-width: 260px;
+  }
+
+  .permission-count {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .permission-detail {
+    font-size: 11px;
+    color: #6b7280;
+    display: block;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* =====================================================
+     FORM HINT
+  ===================================================== */
+
+  .form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .form-hint i {
+    margin-right: 4px;
+  }
+
+  /* =====================================================
+     DISTRICTS
+  ===================================================== */
+
+  .districts-grid {
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(150px, 1fr)
+    );
+    gap: 6px;
+    margin-top: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .district-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .district-checkbox:hover {
+    background: #f3f4f6;
+  }
+
+  .district-checkbox.select-all {
+    grid-column: 1 / -1;
+    font-weight: 500;
+    color: #6a1b9a;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .district-checkbox input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* =====================================================
+     FORM ROWS
+  ===================================================== */
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    width: 100%;
+  }
+
+  .form-group {
+    min-width: 0;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* =====================================================
+     MODAL
+  ===================================================== */
+
+  .modal-large {
+    width: min(800px, 100%);
+    max-width: 800px;
+  }
+
+  .required {
+    color: #ef4444;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .district-info {
+    min-width: 120px;
+    max-width: 100%;
+  }
+
+  .district-name {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .assigned-districts-small {
+    display: block;
+    margin-top: 3px;
+    font-size: 10px;
+    color: #6b7280;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* =====================================================
+     MODAL SAFETY
+  ===================================================== */
+
+  .modal-overlay {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .modal-content.modal-large {
+    width: min(800px, 100%);
+    max-width: 800px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* =====================================================
+     TABLE
+     
+     IMPORTANT:
+     The table remains a table.
+     On small screens it scrolls horizontally instead
+     of breaking the page layout.
+  ===================================================== */
+
+  .table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .table-container .data-table {
+    min-width: 1050px;
+    width: 100%;
+  }
+
+  .table-container th,
+  .table-container td {
+    white-space: nowrap;
+  }
+
+  /* =====================================================
+     ACTION BUTTONS
+  ===================================================== */
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .action-buttons .btn-sm {
+    flex-shrink: 0;
+  }
+
+  /* =====================================================
+     SEARCH AREA
+  ===================================================== */
+
+  .search-filter-bar {
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .search-box {
+    min-width: 0;
+  }
+
+  .search-box input {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .stats-info {
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* =====================================================
+     PAGE HEADER
+  ===================================================== */
+
+  .page-header {
+    min-width: 0;
+  }
+
+  .page-header h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .page-header p {
+    overflow-wrap: anywhere;
+  }
+
+  /* =====================================================
+     FORM ACTIONS
+  ===================================================== */
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .form-actions button {
+    max-width: 100%;
+  }
+
+  /* =====================================================
+     MOBILE - 768px
+  ===================================================== */
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .page-header h2 {
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .permission-warning {
+      align-items: flex-start;
+      font-size: 12px;
+    }
+
+    .super-admin-badge {
+      margin-left: 0;
+    }
+
+    /* -------------------------
+       Search
+    ------------------------- */
+
+    .search-filter-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .search-box {
+      width: 100%;
+    }
+
+    .stats-info {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    /* -------------------------
+       Form
+    ------------------------- */
+
+    .form-row {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    /* -------------------------
+       Modal
+    ------------------------- */
+
+    .modal-overlay {
+      padding: 10px;
+      align-items: flex-start;
+    }
+
+    .modal-content.modal-large {
+      width: 100%;
+      max-width: 100%;
+      max-height: calc(100vh - 20px);
+      margin: 0 auto;
+      border-radius: 8px;
+    }
+
+    /* -------------------------
+       Permission modules
+    ------------------------- */
+
+    .module-header {
+      align-items: flex-start;
+      padding: 10px;
+    }
+
+    .module-title {
+      gap: 7px;
+    }
+
+    .module-actions {
+      gap: 7px;
+    }
+
+    .module-actions-grid {
+      grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+      );
+      padding: 9px 10px;
+    }
+
+    /* -------------------------
+       Districts
+    ------------------------- */
+
+    .districts-grid {
+      grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+      );
+    }
+
+    /* -------------------------
+       Permissions
+    ------------------------- */
+
+    .permission-summary {
+      min-width: 150px;
+      max-width: 200px;
+    }
+
+    .permission-detail {
+      max-width: 190px;
+    }
+
+    .action-count {
+      font-size: 10px;
+    }
+
+    .select-all-label {
+      font-size: 11px;
+    }
+
+    .permission-key {
+      font-size: 9px;
+    }
+
+    /* -------------------------
+       Buttons
+    ------------------------- */
+
+    .form-actions {
+      justify-content: stretch;
+    }
+
+    .form-actions button {
+      flex: 1 1 140px;
+    }
+  }
+
+  /* =====================================================
+     SMALL MOBILE - 480px
+  ===================================================== */
+
+  @media (max-width: 480px) {
+    .page-header h2 {
+      font-size: 18px;
+    }
+
+    .page-header p {
+      font-size: 12px;
+    }
+
+    .permission-warning {
+      padding: 7px 9px;
+    }
+
+    .permission-warning span {
+      font-size: 12px !important;
+    }
+
+    .stats-info {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .super-admin-badge {
+      margin-left: 0;
+    }
+
+    /* -------------------------
+       Modal
+    ------------------------- */
+
+    .modal-overlay {
+      padding: 6px;
+    }
+
+    .modal-content.modal-large {
+      max-height: calc(100vh - 12px);
+      border-radius: 6px;
+    }
+
+    /* -------------------------
+       Permission header
+    ------------------------- */
+
+    .module-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .module-title {
+      width: 100%;
+    }
+
+    .module-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .module-actions-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* -------------------------
+       Districts
+    ------------------------- */
+
+    .districts-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .district-checkbox.select-all {
+      grid-column: auto;
+    }
+
+    /* -------------------------
+       Permission summary
+    ------------------------- */
+
+    .permission-summary {
+      min-width: 130px;
+      max-width: 180px;
+    }
+
+    .permission-key {
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    /* -------------------------
+       Form buttons
+    ------------------------- */
+
+    .form-actions {
+      flex-direction: column-reverse;
+      width: 100%;
+    }
+
+    .form-actions button {
+      width: 100%;
+      flex: none;
+    }
+
+    /* -------------------------
+       Table
+    ------------------------- */
+
+    .table-container .data-table {
+      min-width: 950px;
+    }
+  }
+
+  /* =====================================================
+     VERY SMALL MOBILE - 360px
+  ===================================================== */
+
+  @media (max-width: 360px) {
+    .page-header h2 {
+      font-size: 16px;
+    }
+
+    .module-title {
+      font-size: 13px;
+    }
+
+    .module-actions-grid {
+      padding: 8px;
+    }
+
+    .action-checkbox {
+      font-size: 12px;
+    }
+
+    .district-checkbox {
+      font-size: 12px;
+    }
+
+    .permission-key {
+      display: none;
+    }
+
+    .action-count {
+      font-size: 9px;
+      padding: 2px 5px;
+    }
+
+    .select-all-label {
+      font-size: 10px;
+    }
+
+    .form-hint {
+      font-size: 11px;
+    }
+
+    .modal-content.modal-large {
+      border-radius: 4px;
+    }
+  }
+
+  /* =====================================================
+     TABLET - 769px TO 1024px
+  ===================================================== */
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .page-header h2 {
+      font-size: 22px;
+    }
+
+    .module-actions-grid {
+      grid-template-columns: repeat(
+        2,
+        minmax(120px, 1fr)
+      );
+    }
+
+    .modal-content.modal-large {
+      width: 90%;
+      max-width: 800px;
+    }
+
+    .table-container .data-table {
+      min-width: 1000px;
+    }
+  }
+
+  /* =====================================================
+     LARGE DESKTOP
+  ===================================================== */
+
+  @media (min-width: 1400px) {
+    .module-actions-grid {
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(150px, 1fr)
+      );
+    }
+  }
+
+  /* =====================================================
+     TOUCH DEVICES
+  ===================================================== */
+
+  @media (hover: none) and (pointer: coarse) {
+    .module-header:hover,
+    .action-checkbox:hover,
+    .district-checkbox:hover {
+      background: inherit;
+    }
+
+    .action-checkbox,
+    .district-checkbox,
+    .select-all-label {
+      min-height: 34px;
+    }
+
+    .action-checkbox input[type='checkbox'],
+    .district-checkbox input[type='checkbox'] {
+      width: 17px;
+      height: 17px;
+    }
+  }
+
+  /* =====================================================
+     PREVENT HORIZONTAL PAGE OVERFLOW
+  ===================================================== */
+
+  .dashboard-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .dashboard-container * {
+    box-sizing: border-box;
+  }
+`}</style>
     </div>
   );
 };
