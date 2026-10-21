@@ -27,7 +27,7 @@ const PaymentSystem = () => {
   // STATE
   // ============================================
   const [selectedAction, setSelectedAction] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState(''); // ✅ Store ID as number
+  const [paymentMethod, setPaymentMethod] = useState(''); //  Store ID as number
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentFile, setPaymentFile] = useState(null);
   const [status, setStatus] = useState('Loading payment services...');
@@ -148,8 +148,8 @@ const PaymentSystem = () => {
         });
         
         setPaymentServices(processedServices);
-        setStatus(`✅ ${processedServices.length} services loaded`);
-        console.log('✅ Total services loaded:', processedServices.length);
+        setStatus(` ${processedServices.length} services loaded`);
+        console.log(' Total services loaded:', processedServices.length);
       } else {
         const defaultServices = [
           {
@@ -227,7 +227,7 @@ const PaymentSystem = () => {
     }
   };
 
-  // ✅ Fetch Payment Methods from Database
+  //  Fetch Payment Methods from Database
   const fetchPaymentMethods = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -240,7 +240,7 @@ const PaymentSystem = () => {
         setPaymentMethodsData(methods);
         setFilteredPaymentMethods(methods);
         
-        // ✅ Use id as key
+        //  Use id as key
         const details = {};
         methods.forEach(method => {
           details[method.id] = {
@@ -259,7 +259,7 @@ const PaymentSystem = () => {
           };
         });
         setAccountDetailsData(details);
-        console.log('✅ Payment methods loaded:', methods.length);
+        console.log(' Payment methods loaded:', methods.length);
       } else {
         setPaymentMethodsData([]);
         setFilteredPaymentMethods([]);
@@ -275,7 +275,7 @@ const PaymentSystem = () => {
     }
   };
 
-  // ✅ Fetch Payment History from Database
+  //  Fetch Payment History from Database
   const fetchPaymentHistory = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -288,7 +288,7 @@ const PaymentSystem = () => {
         if (response.data.payments?.length > 0) {
           setShowHistory(true);
         }
-        console.log('✅ Payment history loaded:', response.data.payments?.length || 0);
+        console.log(' Payment history loaded:', response.data.payments?.length || 0);
       }
     } catch (err) {
       console.error('❌ Error fetching payment history:', err);
@@ -310,7 +310,7 @@ const PaymentSystem = () => {
     let filtered = [];
     
     if (isDistrictEvent) {
-      // ✅ For District events: Only show district payment methods
+      //  For District events: Only show district payment methods
       filtered = paymentMethodsData.filter(method => 
         method.district && 
         method.district !== 'all' && 
@@ -320,7 +320,7 @@ const PaymentSystem = () => {
       );
       console.log('📊 Filtered for District event:', filtered.length);
     } else if (isNationalService) {
-      // ✅ For National services/events: Only show national payment methods
+      //  For National services/events: Only show national payment methods
       filtered = paymentMethodsData.filter(method => 
         (method.district === 'all' || method.district === 'national' || method.district === '' || method.district === null) &&
         method.is_active === true
@@ -400,7 +400,7 @@ const PaymentSystem = () => {
   // INVOICE GENERATION WITH QR CODE - A4 TWO COLUMN
   // ============================================
 
-  // ✅ Generate Invoice HTML with QR Code - A4 Two Column Format
+  //  Generate Invoice HTML with QR Code - A4 Two Column Format
   const generateInvoiceHTML = (payment, member) => {
     const isApproved = payment.status?.toLowerCase() === 'approved' || 
                        payment.status?.toLowerCase() === 'completed';
@@ -623,11 +623,11 @@ const PaymentSystem = () => {
 
   const handleDonationChange = (e) => {
     const value = e.target.value;
-    if (value === '' || parseInt(value) >= 1000) {
+    if (value === '' || parseInt(value) >= 1) {
       setDonationAmount(value);
       setError('');
-    } else if (value !== '' && parseInt(value) < 1000) {
-      setError('Minimum donation is 1,000 RWF');
+    } else if (value !== '' && parseInt(value) < 1) {
+      setError('Amount must be at least 1 RWF');
     }
   };
 
@@ -695,8 +695,8 @@ const PaymentSystem = () => {
       return;
     }
 
-    if ((selectedAction.is_donation || selectedAction.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1000)) {
-      setError('Please enter a valid amount (minimum 1,000 RWF)');
+    if ((selectedAction.is_donation || selectedAction.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1)) {
+      setError('Please enter a valid amount (minimum 1 RWF)');
       return;
     }
 
@@ -1283,7 +1283,7 @@ const PaymentSystem = () => {
               </label>
               <input
                 type="number"
-                min={selectedAction?.is_donation ? 1000 : 5000}
+                min="1"
                 placeholder={selectedAction?.is_donation ? "Enter donation amount..." : "Enter membership fee amount..."}
                 value={donationAmount}
                 onChange={handleDonationChange}
@@ -1296,9 +1296,7 @@ const PaymentSystem = () => {
                 }}
               />
               <small style={{ color: '#6b7280', display: 'block', marginTop: '4px' }}>
-                {selectedAction?.is_donation 
-                  ? 'Minimum donation: 1,000 RWF' 
-                  : 'Minimum membership fee: 5,000 RWF'}
+                Type the amount you want to pay in RWF.
               </small>
             </div>
           )}
@@ -1451,7 +1449,7 @@ const PaymentSystem = () => {
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
             <button
               onClick={handleSubmitPayment}
-              disabled={loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1000))}
+              disabled={loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1))}
               style={{
                 flex: 1,
                 background: SCOUT_COLORS.purple,
@@ -1459,10 +1457,10 @@ const PaymentSystem = () => {
                 border: 'none',
                 padding: '15px 25px',
                 borderRadius: '10px',
-                cursor: (loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1000))) ? 'not-allowed' : 'pointer',
+                cursor: (loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1))) ? 'not-allowed' : 'pointer',
                 fontSize: '16px',
                 fontWeight: '600',
-                opacity: (loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1000))) ? 0.5 : 1,
+                opacity: (loading || !selectedAction || !paymentMethod || !paymentDate || filteredPaymentMethods.length === 0 || ((selectedAction?.is_donation || selectedAction?.is_custom_amount) && (!donationAmount || parseInt(donationAmount) < 1))) ? 0.5 : 1,
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {

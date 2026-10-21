@@ -28,6 +28,9 @@ const NationalEvents = () => {
   const [selectedEventForRegistrations, setSelectedEventForRegistrations] = useState(null);
   const [registrationFilter, setRegistrationFilter] = useState('all');
 
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -405,9 +408,23 @@ const NationalEvents = () => {
         eventData
       );
 
+      // Send event fields and the optional image as multipart form data.
+      const payload = new FormData();
+      Object.entries(eventData).forEach(([key, value]) => {
+        payload.append(
+          key,
+          value === null || value === undefined
+            ? ''
+            : typeof value === 'object'
+              ? JSON.stringify(value)
+              : String(value)
+        );
+      });
+      if (photo) payload.append('photo', photo);
+
       const response = await axios.post(
         `${API_URL}/national/events`,
-        eventData,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -423,6 +440,8 @@ const NationalEvents = () => {
         setShowCreateModal(false);
 
         resetForm();
+        setPhoto(null);
+        setPhotoPreview('');
 
         fetchEvents();
 
@@ -537,14 +556,30 @@ const NationalEvents = () => {
   };
 
   // ============================================
-  // DELETE / CANCEL EVENT
+  // DELETE EVENT - PERMANENT
   // ============================================
   const handleDeleteEvent = async (id) => {
-    if (
-      !window.confirm(
-        'Are you sure you want to cancel this event?'
-      )
-    ) {
+    if (!id) {
+      setError(
+        'Invalid event ID. Cannot delete this event.'
+      );
+      return;
+    }
+
+    const event = events.find(
+      currentEvent => currentEvent.id === id
+    );
+
+    const eventTitle =
+      event?.title || `Event #${id}`;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete "${eventTitle}"?\n\n` +
+      `This action cannot be undone.\n\n` +
+      `If the event has registrations, the server will prevent deletion.`
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -553,11 +588,147 @@ const NationalEvents = () => {
       setError('');
       setSuccess('');
 
-      const token =
-        localStorage.getItem('token');
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setError(
+          'Your session has expired. Please login again.'
+        );
+        return;
+      }
+
+      console.log(
+        `🗑️ Deleting national event: ${id}`
+      );
 
       const response = await axios.delete(
         `${API_URL}/national/events/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      console.log(
+        '🗑️ Delete event response:',
+        response.data
+      );
+
+      if (response.data?.success) {
+        /*
+         * ✅ Remove the event from local state immediately.
+         * Do NOT call fetchEvents() here — the backend has
+         * confirmed deletion, so re-fetching is unnecessary
+         * and (when the backend does a soft-cancel) would
+         * pull the event back into the list.
+         */
+        setEvents(prevEvents =>
+          prevEvents.filter(
+            currentEvent =>
+              currentEvent.id !== id
+          )
+        );
+
+        setSuccess(
+          response.data.message ||
+          'Event deleted successfully.'
+        );
+
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
+
+        console.log(
+          `✅ National event ${id} deleted successfully`
+        );
+      } else {
+        /*
+         * Do not remove anything from the UI
+         * when the backend did not confirm deletion.
+         */
+        setError(
+          response.data?.message ||
+          'The event was not deleted.'
+        );
+      }
+
+    } catch (err) {
+      console.error(
+        `❌ Delete national event ${id} error:`,
+        err
+      );
+
+      const serverMessage =
+        err.response?.data?.message;
+
+      if (err.response?.status === 401) {
+        setError(
+          'Your session has expired. Please login again.'
+        );
+      } else if (err.response?.status === 403) {
+        setError(
+          'You do not have permission to delete this event.'
+        );
+      } else if (err.response?.status === 404) {
+        setError(
+          serverMessage ||
+          'Event not found. It may already have been deleted.'
+        );
+
+        /*
+         * Refresh because the database may already
+         * no longer contain this event.
+         */
+        await fetchEvents();
+      } else if (err.response?.status === 400) {
+        setError(
+          serverMessage ||
+          'This event cannot be deleted.'
+        );
+      } else if (err.response?.status >= 500) {
+        setError(
+          serverMessage ||
+          'The server could not delete the event. No changes were made.'
+        );
+      } else if (err.request) {
+        setError(
+          'Unable to connect to the server. The event was not deleted.'
+        );
+      } else {
+        setError(
+          serverMessage ||
+          'Failed to delete event.'
+        );
+      }
+
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ============================================
+  // CANCEL EVENT
+  // ============================================
+  const handleCancelEvent = async (id) => {
+    if (
+      !window.confirm(
+        'Are you sure you want to cancel this event? The event will remain in the system but its status will change to Cancelled.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccess('');
+
+      const token =
+        localStorage.getItem('token');
+
+      const response = await axios.put(
+        `${API_URL}/national/events/${id}`,
+        { status: 'cancelled' },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -570,7 +741,20 @@ const NationalEvents = () => {
           '✅ Event cancelled successfully!'
         );
 
-        fetchEvents();
+        // Update the event immediately
+        setEvents(prevEvents =>
+          prevEvents.map(event =>
+            event.id === id
+              ? {
+                  ...event,
+                  status: 'cancelled'
+                }
+              : event
+          )
+        );
+
+        // Refresh from database
+        await fetchEvents();
 
         setTimeout(() => {
           setSuccess('');
@@ -583,7 +767,7 @@ const NationalEvents = () => {
       }
     } catch (err) {
       console.error(
-        '❌ Delete event error:',
+        '❌ Cancel event error:',
         err
       );
 
@@ -591,8 +775,6 @@ const NationalEvents = () => {
         err.response?.data?.message ||
         'Failed to cancel event'
       );
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -668,6 +850,8 @@ const NationalEvents = () => {
   // RESET FORM
   // ============================================
   const resetForm = () => {
+    setPhoto(null);
+    setPhotoPreview('');
     setFormData({
       title: '',
       description: '',
@@ -912,8 +1096,7 @@ const NationalEvents = () => {
 
             const eventDate =
               event.start_date ||
-              event.date ||
-              'Date TBD';
+              event.date;
 
             const eventLocation =
               event.location ||
@@ -925,22 +1108,49 @@ const NationalEvents = () => {
               'Unlimited';
 
             const eventPrice =
-              event.price || '0';
+              Number(event.price) || 0;
 
             const eventStatus =
               event.status ||
               'upcoming';
+
+            const photoPath =
+              event.image_url ||
+              event.photo_url ||
+              event.imageUrl ||
+              event.photoUrl ||
+              event.image ||
+              event.photo;
+
+            const eventPhoto =
+              photoPath && typeof photoPath === 'string'
+                ? /^https?:\/\//i.test(photoPath)
+                  ? photoPath
+                  : `${API_URL.replace(/\/api\/?$/, '')}/${photoPath
+                      .replace(/\\/g, '/')
+                      .replace(/^\/+/, '')}`
+                : '';
 
             return (
               <div
                 key={event.id}
                 className="event-card national-event-card"
               >
+                {eventPhoto && (
+                  <img
+                    className="national-event-photo"
+                    src={eventPhoto}
+                    alt={eventTitle}
+                    loading="lazy"
+                    onError={e => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+
                 <div className="event-header">
                   <div className="event-title">
-                    <h4>
-                      🌍 {eventTitle}
-                    </h4>
+                    <h4>🌍 {eventTitle}</h4>
 
                     <span className="scope-badge national">
                       National
@@ -952,18 +1162,16 @@ const NationalEvents = () => {
                       eventStatus
                     )}`}
                   >
-                    {getStatusText(
-                      eventStatus
-                    )}
+                    {getStatusText(eventStatus)}
                   </span>
                 </div>
 
                 <div className="event-details">
                   <p>
                     <i className="fas fa-calendar-day"></i>{' '}
-                    {new Date(
-                      eventDate
-                    ).toLocaleDateString()}
+                    {eventDate
+                      ? new Date(eventDate).toLocaleString()
+                      : 'Date TBD'}
                   </p>
 
                   <p>
@@ -973,8 +1181,7 @@ const NationalEvents = () => {
 
                   <p>
                     <i className="fas fa-users"></i>{' '}
-                    Capacity:{' '}
-                    {eventCapacity}
+                    Capacity: {eventCapacity}
                   </p>
 
                   <p>
@@ -987,79 +1194,68 @@ const NationalEvents = () => {
                   {event.event_type && (
                     <p>
                       <i className="fas fa-tag"></i>{' '}
-                      Type:{' '}
-                      {event.event_type}
+                      Type: {event.event_type}
                     </p>
                   )}
 
-                  {event.audiences &&
-                    event.audiences.length >
-                      0 && (
+                  {Array.isArray(event.audiences) &&
+                    event.audiences.length > 0 && (
                       <div className="audience-tags">
-                        <strong>
-                          Audiences:
-                        </strong>
+                        <strong>Audiences:</strong>
 
-                        {event.audiences.map(
-                          a => (
-                            <span
-                              key={a}
-                              className="audience-tag"
-                            >
-                              {a}
-                            </span>
-                          )
-                        )}
+                        {event.audiences.map(audience => (
+                          <span
+                            key={audience}
+                            className="audience-tag"
+                          >
+                            {audience}
+                          </span>
+                        ))}
                       </div>
                     )}
                 </div>
 
                 <div className="event-actions">
                   <button
+                    type="button"
                     className="btn-sm btn-edit"
-                    onClick={() =>
-                      openEditModal(
-                        event
-                      )
-                    }
+                    onClick={() => openEditModal(event)}
                   >
-                    <i className="fas fa-edit"></i>{' '}
-                    Edit
+                    <i className="fas fa-edit"></i> Edit
                   </button>
 
+                  {eventStatus !== 'cancelled' &&
+                    eventStatus !== 'completed' && (
+                      <button
+                        type="button"
+                        className="btn-sm btn-cancel-event"
+                        onClick={() => handleCancelEvent(event.id)}
+                      >
+                        <i className="fas fa-ban"></i> Cancel
+                      </button>
+                    )}
+
                   <button
+                    type="button"
                     className="btn-sm btn-delete"
-                    onClick={() =>
-                      handleDeleteEvent(
-                        event.id
-                      )
-                    }
-                    disabled={
-                      deletingId ===
-                      event.id
-                    }
+                    onClick={() => handleDeleteEvent(event.id)}
+                    disabled={deletingId === event.id}
                   >
-                    {deletingId ===
-                    event.id ? (
-                      '...'
+                    {deletingId === event.id ? (
+                      'Deleting...'
                     ) : (
                       <>
-                        <i className="fas fa-trash"></i>{' '}
-                        Delete
+                        <i className="fas fa-trash"></i> Delete
                       </>
                     )}
                   </button>
 
                   <button
+                    type="button"
                     className="btn-sm btn-registrations"
-                    onClick={() =>
-                      handleViewRegistrations(
-                        event
-                      )
-                    }
+                    onClick={() => handleViewRegistrations(event)}
                   >
-                    <i className="fas fa-users"></i>{' '}
-                    Registrations
+                    <i className="fas fa-users"></i> Registrations
                   </button>
                 </div>
               </div>
@@ -1524,6 +1720,37 @@ const NationalEvents = () => {
                 />
               </div>
 
+              {/* Optional photo: shown while creating an event */}
+              {!selectedEvent && (
+                <div className="form-group">
+                  <label htmlFor="event-photo">Event photo (optional)</label>
+                  <input
+                    id="event-photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={e => {
+                      const file = e.target.files?.[0] || null;
+                      setPhoto(file);
+                      setPhotoPreview(file ? URL.createObjectURL(file) : '');
+                    }}
+                  />
+                  {photoPreview && (
+                    <img
+                      src={photoPreview}
+                      alt="Selected event"
+                      style={{
+                        display: 'block',
+                        marginTop: 12,
+                        maxWidth: 240,
+                        maxHeight: 160,
+                        objectFit: 'cover',
+                        borderRadius: 8
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Event Type and Category */}
               <div className="form-row">
 
@@ -1926,10 +2153,6 @@ const NationalEvents = () => {
           ============================================ */}
       <style jsx>{`
 
-        /* ============================================
-           NATIONAL EVENT CARD
-           ============================================ */
-
         .national-event-card {
           border-left: 4px solid #622599;
         }
@@ -1949,10 +2172,6 @@ const NationalEvents = () => {
           display: inline-block;
           margin-left: 8px;
         }
-
-        /* ============================================
-           PRIMARY BUTTON
-           ============================================ */
 
         .btn-primary {
           background: #622599;
@@ -1974,10 +2193,6 @@ const NationalEvents = () => {
           cursor: not-allowed;
         }
 
-        /* ============================================
-           DELETE BUTTON
-           ============================================ */
-
         .btn-delete {
           background: #fff5f5;
           color: #c53030;
@@ -1987,9 +2202,14 @@ const NationalEvents = () => {
           background: #fed7d7;
         }
 
-        /* ============================================
-           AUDIENCE TAGS
-           ============================================ */
+        .btn-cancel-event {
+          background: #fff7ed;
+          color: #c2410c;
+        }
+
+        .btn-cancel-event:hover:not(:disabled) {
+          background: #fed7aa;
+        }
 
         .audience-tags {
           display: flex;
@@ -2005,10 +2225,6 @@ const NationalEvents = () => {
           font-size: 11px;
           color: #4a5568;
         }
-
-        /* ============================================
-           AUDIENCES GRID
-           ============================================ */
 
         .audiences-grid {
           display: grid;
@@ -2049,10 +2265,6 @@ const NationalEvents = () => {
           flex-shrink: 0;
         }
 
-        /* ============================================
-           REGISTRATIONS BUTTON
-           ============================================ */
-
         .btn-registrations {
           background: #E8F5E9;
           color: #2E7D32;
@@ -2061,10 +2273,6 @@ const NationalEvents = () => {
         .btn-registrations:hover {
           background: #C8E6C9;
         }
-
-        /* ============================================
-           REGISTRATION STATS
-           ============================================ */
 
         .registration-stats {
           display: grid;
@@ -2117,10 +2325,6 @@ const NationalEvents = () => {
           color: #6B7280;
         }
 
-        /* ============================================
-           REGISTRATION FILTER
-           ============================================ */
-
         .registration-filter {
           display: flex;
           align-items: center;
@@ -2143,10 +2347,6 @@ const NationalEvents = () => {
           color: #4a5568;
         }
 
-        /* ============================================
-           EMPTY REGISTRATIONS
-           ============================================ */
-
         .empty-registrations {
           text-align: center;
           padding: 40px 20px;
@@ -2167,10 +2367,6 @@ const NationalEvents = () => {
         .empty-registrations small {
           color: #a0aec0;
         }
-
-        /* ============================================
-           REGISTRATION TABLE
-           ============================================ */
 
         .registrations-table {
           width: 100%;
@@ -2206,10 +2402,6 @@ const NationalEvents = () => {
           margin-top: 8px;
           -webkit-overflow-scrolling: touch;
         }
-
-        /* ============================================
-           ACTION BUTTONS
-           ============================================ */
 
         .action-buttons {
           display: flex;
@@ -2277,10 +2469,6 @@ const NationalEvents = () => {
           background: #f6e05e;
         }
 
-        /* ============================================
-           STATUS BADGES
-           ============================================ */
-
         .status-badge {
           font-size: 11px;
           padding: 3px 8px;
@@ -2324,10 +2512,6 @@ const NationalEvents = () => {
           color: #4a5568;
         }
 
-        /* ============================================
-           EMPTY EVENTS
-           ============================================ */
-
         .empty-state {
           grid-column: 1 / -1;
           text-align: center;
@@ -2349,10 +2533,6 @@ const NationalEvents = () => {
         .empty-state p {
           margin: 0 0 16px;
         }
-
-        /* ============================================
-           LOADING
-           ============================================ */
 
         .loading-spinner {
           display: flex;
@@ -2399,10 +2579,6 @@ const NationalEvents = () => {
           }
         }
 
-        /* ============================================
-           FORM HELP TEXT
-           ============================================ */
-
         .form-group small {
           display: block;
           color: #718096;
@@ -2414,100 +2590,56 @@ const NationalEvents = () => {
           color: #e53e3e;
         }
 
-        /* ============================================
-           IMPORTANT MODAL FIX
-           
-           The modal is deliberately given a very high
-           z-index so it appears ABOVE the sidebar,
-           header, dashboard and other fixed elements.
-           ============================================ */
-
         .modal-overlay {
           position: fixed;
           inset: 0;
-
           width: 100%;
           height: 100%;
-
           background: rgba(
             0,
             0,
             0,
             0.55
           );
-
           display: flex;
           align-items: center;
           justify-content: center;
-
-          /*
-           * IMPORTANT:
-           * This must be higher than the sidebar.
-           */
           z-index: 99999;
-
           padding: 20px;
-
           box-sizing: border-box;
-
           overflow-y: auto;
-
           isolation: isolate;
         }
 
-        /*
-         * Extra class for the Create/Edit event
-         * modal. This ensures it remains above all
-         * dashboard elements.
-         */
         .event-form-overlay {
           z-index: 999999;
         }
 
-        /* ============================================
-           MODAL CONTENT
-           ============================================ */
-
         .modal-content {
           position: relative;
-
           background: #ffffff;
-
           width: 100%;
           max-width: 700px;
-
           max-height: calc(100vh - 40px);
-
           margin: auto;
-
           border-radius: 12px;
-
           box-shadow:
             0 20px 50px
               rgba(0, 0, 0, 0.25),
             0 5px 15px
               rgba(0, 0, 0, 0.12);
-
           overflow-y: auto;
           overflow-x: hidden;
-
           box-sizing: border-box;
-
           z-index: 100000;
         }
 
         .event-form-modal {
           z-index: 1000000;
-
-          /*
-           * Prevent the form from becoming wider
-           * than the available screen.
-           */
           width: min(
             900px,
             100%
           );
-
           max-width: 900px;
         }
 
@@ -2515,74 +2647,44 @@ const NationalEvents = () => {
           max-width: 900px;
         }
 
-        /* ============================================
-           MODAL HEADER
-           ============================================ */
-
         .modal-header {
           position: sticky;
-
           top: 0;
-
           z-index: 20;
-
           display: flex;
-
           align-items: center;
-
           justify-content: space-between;
-
           gap: 15px;
-
           padding: 18px 24px;
-
           background: #ffffff;
-
           border-bottom: 1px solid #e2e8f0;
-
           border-radius:
             12px 12px 0 0;
-
           box-sizing: border-box;
         }
 
         .modal-header h3 {
           margin: 0;
-
           flex: 1;
-
           font-size: 20px;
-
           font-weight: 700;
-
           color: #1a202c;
-
           line-height: 1.4;
         }
 
         .modal-close {
           flex: 0 0 auto;
-
           width: 38px;
           height: 38px;
-
           display: flex;
-
           align-items: center;
           justify-content: center;
-
           background: #f7fafc;
-
           border: none;
-
           border-radius: 50%;
-
           color: #718096;
-
           font-size: 18px;
-
           cursor: pointer;
-
           transition:
             background 0.2s ease,
             color 0.2s ease,
@@ -2591,21 +2693,13 @@ const NationalEvents = () => {
 
         .modal-close:hover {
           background: #edf2f7;
-
           color: #2d3748;
-
           transform: scale(1.05);
         }
 
-        /* ============================================
-           EVENT FORM
-           ============================================ */
-
         .event-form-modal form {
           width: 100%;
-
           box-sizing: border-box;
-
           padding-top: 4px;
         }
 
@@ -2622,19 +2716,11 @@ const NationalEvents = () => {
         .event-form-modal
         .form-group label {
           display: block;
-
           margin-bottom: 7px;
-
           font-size: 14px;
-
           font-weight: 600;
-
           color: #2d3748;
         }
-
-        /* ============================================
-           FORM INPUTS
-           ============================================ */
 
         .event-form-modal
         .form-group input,
@@ -2643,31 +2729,18 @@ const NationalEvents = () => {
         .event-form-modal
         .form-group textarea {
           display: block;
-
           width: 100%;
-
           max-width: 100%;
-
           min-height: 42px;
-
           padding: 10px 12px;
-
           box-sizing: border-box;
-
           background: #ffffff;
-
           border: 1px solid #cbd5e0;
-
           border-radius: 7px;
-
           color: #2d3748;
-
           font-family: inherit;
-
           font-size: 14px;
-
           outline: none;
-
           transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease;
@@ -2676,7 +2749,6 @@ const NationalEvents = () => {
         .event-form-modal
         .form-group textarea {
           min-height: 90px;
-
           resize: vertical;
         }
 
@@ -2687,7 +2759,6 @@ const NationalEvents = () => {
         .event-form-modal
         .form-group textarea:focus {
           border-color: #622599;
-
           box-shadow:
             0 0 0 3px
               rgba(
@@ -2707,22 +2778,14 @@ const NationalEvents = () => {
           color: #a0aec0;
         }
 
-        /* ============================================
-           FORM ROW
-           ============================================ */
-
         .event-form-modal
         .form-row {
           display: grid;
-
           grid-template-columns:
             minmax(0, 1fr)
             minmax(0, 1fr);
-
           gap: 18px;
-
           width: 100%;
-
           box-sizing: border-box;
         }
 
@@ -2732,74 +2795,42 @@ const NationalEvents = () => {
           min-width: 0;
         }
 
-        /* ============================================
-           FORM ACTIONS
-           ============================================ */
-
         .event-form-modal
         .form-actions {
           position: sticky;
-
           bottom: 0;
-
           z-index: 30;
-
           display: flex;
-
           align-items: center;
-
           justify-content: flex-end;
-
           gap: 12px;
-
           padding: 16px 24px;
-
           margin-top: 8px;
-
           background: #ffffff;
-
           border-top: 1px solid #e2e8f0;
-
           border-radius:
             0 0 12px 12px;
-
           box-sizing: border-box;
         }
 
         .event-form-modal
         .form-actions button {
           min-height: 42px;
-
           padding: 10px 18px;
-
           border-radius: 7px;
-
           font-size: 14px;
-
           font-weight: 600;
-
           cursor: pointer;
         }
 
-        /* ============================================
-           SECONDARY BUTTON
-           ============================================ */
-
         .btn-secondary {
           background: #e2e8f0;
-
           color: #2d3748;
-
           border: none;
-
           padding: 10px 20px;
-
           border-radius: 8px;
-
           font-weight: 600;
-
           cursor: pointer;
-
           transition:
             background 0.2s ease;
         }
@@ -2808,43 +2839,29 @@ const NationalEvents = () => {
           background: #cbd5e0;
         }
 
-        /* ============================================
-           ALERTS
-           ============================================ */
-
         .alert {
           padding: 12px 16px;
-
           border-radius: 8px;
-
           margin-bottom: 16px;
-
           display: flex;
-
           align-items: flex-start;
-
           gap: 12px;
         }
 
         .alert-error {
           background: #fff5f5;
-
           border: 1px solid #feb2b2;
-
           color: #9b2c2c;
         }
 
         .alert-success {
           background: #f0fff4;
-
           border: 1px solid #9ae6b4;
-
           color: #276749;
         }
 
         .alert i {
           margin-top: 2px;
-
           font-size: 18px;
         }
 
@@ -2862,20 +2879,13 @@ const NationalEvents = () => {
 
         .btn-retry-sm {
           background: none;
-
           border: 1px solid
             currentColor;
-
           padding: 2px 10px;
-
           border-radius: 4px;
-
           cursor: pointer;
-
           font-size: 12px;
-
           margin-top: 4px;
-
           color: inherit;
         }
 
@@ -2889,13 +2899,8 @@ const NationalEvents = () => {
             );
         }
 
-        /* ============================================
-           EVENTS GRID
-           ============================================ */
-
         .events-grid {
           display: grid;
-
           grid-template-columns:
             repeat(
               auto-fill,
@@ -2904,15 +2909,12 @@ const NationalEvents = () => {
                 1fr
               )
             );
-
           gap: 20px;
         }
 
         .event-card {
           background: white;
-
           border-radius: 12px;
-
           box-shadow:
             0 1px 3px
               rgba(
@@ -2921,9 +2923,7 @@ const NationalEvents = () => {
                 0,
                 0.1
               );
-
           padding: 16px;
-
           transition:
             box-shadow 0.2s ease;
         }
@@ -2941,37 +2941,28 @@ const NationalEvents = () => {
 
         .event-header {
           display: flex;
-
           justify-content:
             space-between;
-
           align-items:
             flex-start;
-
           margin-bottom: 12px;
-
           gap: 10px;
         }
 
         .event-title {
           flex: 1;
-
           min-width: 0;
         }
 
         .event-title h4 {
           margin: 0;
-
           font-size: 16px;
-
           color: #1a202c;
-
           word-break: break-word;
         }
 
         .event-details {
           font-size: 14px;
-
           color: #4a5568;
         }
 
@@ -2981,66 +2972,42 @@ const NationalEvents = () => {
 
         .event-actions {
           display: flex;
-
           flex-wrap: wrap;
-
           gap: 6px;
-
           margin-top: 12px;
-
           padding-top: 12px;
-
           border-top:
             1px solid
             #e2e8f0;
         }
 
-        /* ============================================
-           DASHBOARD
-           ============================================ */
-
         .dashboard-container {
           padding: 20px;
-
           max-width: 1400px;
-
           margin: 0 auto;
-
           width: 100%;
-
           box-sizing: border-box;
         }
 
         .page-header {
           display: flex;
-
           justify-content:
             space-between;
-
           align-items: center;
-
           margin-bottom: 24px;
-
           flex-wrap: wrap;
-
           gap: 16px;
         }
 
         .page-header h2 {
           margin: 0;
-
           color: #1a202c;
         }
 
         .page-header p {
           margin: 4px 0 0;
-
           color: #718096;
         }
-
-        /* ============================================
-           TABLET
-           ============================================ */
 
         @media (max-width: 900px) {
 
@@ -3066,10 +3033,6 @@ const NationalEvents = () => {
           }
         }
 
-        /* ============================================
-           MOBILE / TABLET
-           ============================================ */
-
         @media (max-width: 768px) {
 
           .dashboard-container {
@@ -3086,7 +3049,6 @@ const NationalEvents = () => {
 
           .page-header {
             flex-direction: column;
-
             align-items: stretch;
           }
 
@@ -3097,30 +3059,23 @@ const NationalEvents = () => {
 
           .modal-overlay {
             align-items: flex-start;
-
             padding: 15px;
-
             overflow-y: auto;
           }
 
           .modal-content {
             max-width: 100%;
-
             max-height:
               calc(
                 100vh - 30px
               );
-
             margin: auto;
-
             border-radius: 10px;
           }
 
           .event-form-modal {
             width: 100%;
-
             max-width: 100%;
-
             max-height:
               calc(
                 100vh - 30px
@@ -3142,9 +3097,7 @@ const NationalEvents = () => {
           .event-form-modal
           .form-group {
             margin-left: 18px;
-
             margin-right: 18px;
-
             margin-bottom: 16px;
           }
 
@@ -3156,7 +3109,6 @@ const NationalEvents = () => {
           .event-form-modal
           .form-row {
             grid-template-columns: 1fr;
-
             gap: 0;
           }
 
@@ -3188,10 +3140,6 @@ const NationalEvents = () => {
           }
         }
 
-        /* ============================================
-           SMALL MOBILE
-           ============================================ */
-
         @media (max-width: 480px) {
 
           .dashboard-container {
@@ -3204,22 +3152,17 @@ const NationalEvents = () => {
 
           .modal-content {
             width: 100%;
-
             max-width: 100%;
-
             max-height:
               calc(
                 100vh - 16px
               );
-
             border-radius: 9px;
           }
 
           .event-form-modal {
             width: 100%;
-
             max-width: 100%;
-
             max-height:
               calc(
                 100vh - 16px
@@ -3232,15 +3175,12 @@ const NationalEvents = () => {
 
           .modal-header h3 {
             font-size: 16px;
-
             line-height: 1.3;
           }
 
           .modal-close {
             width: 34px;
-
             height: 34px;
-
             font-size: 16px;
           }
 
@@ -3251,9 +3191,7 @@ const NationalEvents = () => {
           .event-form-modal
           .form-group {
             margin-left: 15px;
-
             margin-right: 15px;
-
             margin-bottom: 15px;
           }
 
@@ -3272,7 +3210,6 @@ const NationalEvents = () => {
           .form-group
           textarea {
             font-size: 14px;
-
             min-height: 42px;
           }
 
@@ -3280,13 +3217,10 @@ const NationalEvents = () => {
           .form-actions {
             flex-direction:
               column-reverse;
-
             align-items:
               stretch;
-
             padding:
               13px 15px;
-
             gap: 8px;
           }
 
@@ -3306,10 +3240,8 @@ const NationalEvents = () => {
 
           .registration-filter {
             flex-direction: column;
-
             align-items:
               stretch;
-
             gap: 8px;
           }
 
@@ -3333,10 +3265,6 @@ const NationalEvents = () => {
             font-size: 20px;
           }
         }
-
-        /* ============================================
-           VERY SMALL PHONES
-           ============================================ */
 
         @media (max-width: 360px) {
 
@@ -3364,7 +3292,6 @@ const NationalEvents = () => {
           .event-form-modal
           .form-group {
             margin-left: 12px;
-
             margin-right: 12px;
           }
 
@@ -3375,6 +3302,16 @@ const NationalEvents = () => {
           }
         }
 
+        .national-event-photo {
+          display: block;
+          width: 100%;
+          height: 210px;
+          object-fit: cover;
+          object-position: center;
+          border-radius: 8px;
+          margin-bottom: 14px;
+          background: #f3f4f6;
+        }
       `}</style>
     </div>
   );
